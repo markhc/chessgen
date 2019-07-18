@@ -142,24 +142,45 @@ inline std::string to_string(File f)
   return std::string{static_cast<char>(static_cast<int>(f) + 'a')};
 }
 inline std::string to_string(Square s) { return to_string(getFile(s)) + to_string(getRank(s)); }
+template <Color color = Color::White>
 inline std::string to_string(Piece p)
 {
-  switch (p) {
-    case Piece::Pawn:
-      return "P";
-    case Piece::Rook:
-      return "R";
-    case Piece::Bishop:
-      return "B";
-    case Piece::Knight:
-      return "N";
-    case Piece::King:
-      return "K";
-    case Piece::Queen:
-      return "Q";
-    case Piece::Count:
-    default:
-      throw std::runtime_error("Invalid piece");
+  if constexpr (color == Color::White) {
+    switch (p) {
+      case Piece::Pawn:
+        return "P";
+      case Piece::Rook:
+        return "R";
+      case Piece::Bishop:
+        return "B";
+      case Piece::Knight:
+        return "N";
+      case Piece::King:
+        return "K";
+      case Piece::Queen:
+        return "Q";
+      case Piece::Count:
+      default:
+        throw std::runtime_error("Invalid piece");
+    }
+  } else {
+    switch (p) {
+      case Piece::Pawn:
+        return "p";
+      case Piece::Rook:
+        return "r";
+      case Piece::Bishop:
+        return "b";
+      case Piece::Knight:
+        return "n";
+      case Piece::King:
+        return "k";
+      case Piece::Queen:
+        return "q";
+      case Piece::Count:
+      default:
+        throw std::runtime_error("Invalid piece");
+    }
   }
 }
 }  // namespace chessgen
