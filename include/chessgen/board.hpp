@@ -20,36 +20,124 @@ CHESSGEN_ENUMOPS(CastleSide)
 class Board
 {
 public:
+  /**
+   * @brief Constructs a board in the default initial position
+   */
   Board();
+
+  /**
+   * @brief Constructs a board in the given position
+   */
   Board(std::string_view initialFen);
 
-  void        loadFen(std::string_view fen);
+  /**
+   * @brief Sets the board to the given X-FEN position
+   *
+   * @param fen A position using the X-FEN notation
+   */
+  void loadFen(std::string_view fen);
+
+  /**
+   * @brief Gets the X-FEN notation for the current board position
+   */
   std::string getFen() const;
+
+  /**
+   * @brief Builds a string representation of the current board position
+   *
+   * @param useUnicodeChars Whether to use the unicode chess pieces instead
+   *                        of letters for the pieces in the board
+   *
+   * @returns The current boars position in a string representation
+   */
   std::string prettyPrint(bool useUnicodeChars = true);
 
   void makeMove(std::string_view move);
   void makeMove(Move move);
   Move undoMove();
 
-  int        getHalfMoves() const;
-  int        getFullMove() const;
-  bool       isInitialPosition() const;
-  Color      getActivePlayer() const;
-  bool       isInCheck(Color color) const;
-  bool       canShortCastle(Color color) const;
-  bool       canLongCastle(Color color) const;
+  /**
+   * @brief Gets the number of halfmoves since the last capture or pawn move
+   *
+   * The number of halfmoves is used to determine if a draw can be claimed
+   * by the Fifty-move rule (https://en.wikipedia.org/wiki/Fifty-move_rule)
+   *
+   * @returns The current number of halfmoves since the last capture or pawn move
+   */
+  int getHalfMoves() const;
+
+  /**
+   * @brief Gets the fullmove number
+   *
+   * The fullmove number starts at 1 and is incremented after every black move
+   *
+   * @returns The current fullmove number
+   */
+  int getFullMove() const;
+
+  /**
+   * @brief Checks whether the board is in the initial chess position
+   */
+  bool isInitialPosition() const;
+
+  /**
+   * @brief Gets the current active player
+   */
+  Color getActivePlayer() const;
+
+  /**
+   * @brief Checks whether the given color is in check by the enemy
+   */
+  bool isInCheck(Color color) const;
+
+  /**
+   * @brief Checks whether the given color can castle king-side
+   */
+  bool canShortCastle(Color color) const;
+
+  /**
+   * @brief Checks whether the given color can castle queen-side
+   */
+  bool canLongCastle(Color color) const;
+
+  /**
+   * @brief Gets a bitflag enumeration with the castle rights for the given color
+   */
   CastleSide getCastlingRights(Color color) const;
 
+  /**
+   * @brief Retrieves a bitboard with the position of the pieces of the given type
+   *        belonging to the player of the given color
+   */
   Bitboard getPieces(Color color, Piece type) const;
+
+  /**
+   * @brief Retrieves a bitboard with the position of all the pieces of the given color
+   */
   Bitboard getAllPieces(Color color) const;
+
+  /**
+   * @brief Retrieves a bitboard with all the occupied squares in the board
+   */
   Bitboard getOccupied() const;
+
+  /**
+   * @brief Retrieves a bitboard with all the empty squares in the board
+   */
   Bitboard getUnoccupied() const;
+
+  /**
+   * @brief Retrieves a bitboard with the enpassant square position.
+   *        If there is no enpassant pawn, the value is 0
+   */
   Bitboard getEnPassant() const;
 
   /**
-   * @brief Retrived all possible moves for the given piece
+   * @brief Retrives all pseudo-legal moves for the given piece in the current board
    *
    * Determines all the squares the given piece type can move to from the source square
+   * in the current board configuration. No consideration is done whether the moves are
+   * illegal (would leave the king in check)
    *
    * @param type       The piece type
    * @param color      The piece color
