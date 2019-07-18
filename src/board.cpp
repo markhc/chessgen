@@ -18,10 +18,6 @@ namespace chessgen
 static std::string_view _initialFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 static std::once_flag   _flag;
 
-static constexpr Color getOppositeColor(Color c)
-{
-  return c == Color::White ? Color::Black : Color::White;
-}
 // -------------------------------------------------------------------------------------------------
 Board::Board()
 {
@@ -276,7 +272,7 @@ bool Board::isInCheck(Color color) const
     return false;
   }
 
-  return isSquareUnderAttack(getOppositeColor(color), squareFromIndex(kingSquareIndex));
+  return isSquareUnderAttack(~color, squareFromIndex(kingSquareIndex));
 }
 // -------------------------------------------------------------------------------------------------
 bool Board::canShortCastle(Color color) const
@@ -288,7 +284,7 @@ bool Board::canShortCastle(Color color) const
   }
 
   auto       kingIndex  = bitscan_forward(getPieces(color, Piece::King));
-  auto const enemyColor = getOppositeColor(color);
+  auto const enemyColor = ~color;
 
   auto const squareMask = ((1ULL << (kingIndex + 1)) | (1ULL << (kingIndex + 2)));
   if (getOccupied() & squareMask) return false;
@@ -313,7 +309,7 @@ bool Board::canLongCastle(Color color) const
   }
 
   auto       kingIndex  = bitscan_forward(getPieces(color, Piece::King));
-  auto const enemyColor = getOppositeColor(color);
+  auto const enemyColor = ~color;
 
   auto const squareMask =
       ((1ULL << (kingIndex - 1)) | (1ULL << (kingIndex - 2) | (1ULL << (kingIndex - 3))));
@@ -372,8 +368,7 @@ bool Board::isSquareUnderAttack(Color color, Square square) const
   // To check if a square is under attack we check if a piece on this sqaure can attack the same
   // enemy piece If that is true, then the enemy piece is also attacking this square
   //
-  if (attacks::getNonSlidingAttacks(Piece::Pawn, square, getOppositeColor(color)) &
-      getPieces(color, Piece::Pawn))
+  if (attacks::getNonSlidingAttacks(Piece::Pawn, square, ~color) & getPieces(color, Piece::Pawn))
     return true;
   if (attacks::getNonSlidingAttacks(Piece::Knight, square, Color::White) &
       getPieces(color, Piece::Knight))

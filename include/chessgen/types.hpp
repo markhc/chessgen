@@ -132,7 +132,7 @@ enum Color {
   White,
   Black,
 };
-
+inline Color       operator~(Color c) { return c == Color::White ? Color::Black : Color::White; }
 inline std::string to_string(Rank r)
 {
   return std::string{static_cast<char>(static_cast<int>(r) + '0')};
