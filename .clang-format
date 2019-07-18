@@ -1,0 +1,29 @@
+---
+BasedOnStyle: Google
+AccessModifierOffset: -2
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments: 'true'
+AlignConsecutiveDeclarations: 'true'
+AlignEscapedNewlines: Right
+AlignOperands: 'true'
+AllowAllParametersOfDeclarationOnNextLine: 'false'
+BinPackArguments: 'false'
+BinPackParameters: 'false'
+BreakBeforeBraces: Linux
+BreakStringLiterals: 'true'
+ColumnLimit: '100'
+CompactNamespaces: 'false'
+FixNamespaceComments: 'true'
+IndentWidth: '2'
+SpacesInAngles: 'false'
+SpacesInCStyleCastParentheses: 'false'
+SpacesInParentheses: 'false'
+Standard: Cpp11
+UseTab: Never
+SortIncludes: 'true'
+AlignTrailingComments: 'true'
+StatementMacros:
+  - CHESSGEN_ENUMOPS
+PenaltyExcessCharacter: 5
+PenaltyBreakComment: 50
+...

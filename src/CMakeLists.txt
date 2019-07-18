@@ -1,0 +1,9 @@
+target_sources(${MAIN_TARGET}
+  PRIVATE 
+    attacks.cpp
+    bitboard.cpp
+    board.cpp
+    move.cpp
+    rays.cpp
+  PUBLIC
+)
