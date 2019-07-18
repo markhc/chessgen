@@ -20,6 +20,22 @@ static constexpr Bitboard moveEast(Bitboard b, int n)
   }
   return newbb;
 }
+
+class Rays
+{
+public:
+  auto operator[](Direction d) -> decltype(auto) { return mRays[to_int(d)]; }
+  auto operator[](Direction d) const -> decltype(auto) { return mRays[to_int(d)]; }
+
+private:
+  Bitboard mRays[to_int(Direction::Count)][64];
+};
+
+/**
+ * @brief Precomputed ray table
+ */
+Rays _rays;
+
 void precomputeTables()
 {
   for (auto sq = 0; sq < 64; ++sq) {
@@ -38,9 +54,6 @@ void precomputeTables()
   }
 }
 
-/**
- * @brief Precomputed ray table
- */
-Rays _rays;
+Bitboard getRayForSquare(Direction d, int square) { return _rays[d][square]; }
 }  // namespace rays
 }  // namespace chessgen

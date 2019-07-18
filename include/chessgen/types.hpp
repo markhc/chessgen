@@ -183,4 +183,10 @@ inline std::string to_string(Piece p)
     }
   }
 }
+
+template <class E>
+constexpr int to_int(E e)
+{
+  return static_cast<int>(e);
+}
 }  // namespace chessgen
