@@ -31,6 +31,8 @@ public:
   void makeMove(Move move);
   Move undoMove();
 
+  int        getHalfMoves() const;
+  int        getFullMove() const;
   bool       isInitialPosition() const;
   Color      getActivePlayer() const;
   bool       isInCheck(Color color) const;

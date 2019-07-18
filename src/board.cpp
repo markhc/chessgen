@@ -17,7 +17,7 @@ namespace chessgen
 {
 static std::string_view _initialFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 static std::once_flag   _flag;
-static char _fenCharacters[2][6] = {{'P', 'R', 'N', 'B', 'Q', 'K'}, {'p', 'r', 'n', 'b', 'q', 'k'}};
+
 static constexpr Color getOppositeColor(Color c)
 {
   return c == Color::White ? Color::Black : Color::White;
@@ -158,11 +158,11 @@ std::string Board::getFen() const
       for (auto piece :
            {Piece::King, Piece::Queen, Piece::Rook, Piece::Bishop, Piece::Knight, Piece::Pawn}) {
         if (mPieces[color][piece] & square) {
-          return std::make_pair(static_cast<int>(color), static_cast<int>(piece));
+          return std::make_pair(color, piece);
         }
       }
     }
-    return std::make_pair(-1, -1);
+    return std::make_pair(Color::White, Piece::None);
   };
 
   int emptyCount = 0;
@@ -177,7 +177,10 @@ std::string Board::getFen() const
           fen += std::to_string(emptyCount);
           emptyCount = 0;
         }
-        fen += _fenCharacters[color][piece];
+        if (color == Color::White)
+          fen += to_string<Color::White>(piece);
+        else
+          fen += to_string<Color::Black>(piece);
       } else {
         emptyCount++;
       }
@@ -255,6 +258,10 @@ std::string Board::prettyPrint(bool useUnicodeChars)
   ss << "    A B C D E F G H" << std::endl;
   return ss.str();
 }
+// -------------------------------------------------------------------------------------------------
+int Board::getHalfMoves() const { return mHalfMoves; }
+// -------------------------------------------------------------------------------------------------
+int Board::getFullMove() const { return mFullMove; }
 // -------------------------------------------------------------------------------------------------
 bool Board::isInitialPosition() const { return getFen() == _initialFen; }
 // -------------------------------------------------------------------------------------------------
