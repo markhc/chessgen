@@ -1,4 +1,5 @@
 #include "chessgen/bitboard.hpp"
+#include "chessgen/attacks.hpp"
 
 namespace chessgen
 {
@@ -12,4 +13,25 @@ std::uint64_t SquareBB[64] = {
     1ULL << 48, 1ULL << 49, 1ULL << 50, 1ULL << 51, 1ULL << 52, 1ULL << 53, 1ULL << 54, 1ULL << 55,
     1ULL << 56, 1ULL << 57, 1ULL << 58, 1ULL << 59, 1ULL << 60, 1ULL << 61, 1ULL << 62, 1ULL << 63,
 };
+Bitboard BBGetBetween(Square s1, Square s2)
+{
+  return attacks::getLineBetween(s1, s2) &
+         ((Bitboards::AllSquares << (to_int(s1) + (to_int(s1) < to_int(s2)))) ^
+          (Bitboards::AllSquares << (to_int(s2) + !(to_int(s1) < to_int(s2)))));
+}
+void BBPrettyPrint(std::ostream& os, Bitboard bb)
+{
+  os << "  +-----------------+\n";
+  for (Rank r = Rank::Rank8; r >= Rank::Rank1; --r) {
+    os << static_cast<int>(r) + 1 << " | ";
+    for (File f = File::FileA; f <= File::FileH; ++f) {
+      os << ((bb & makeSquare(f, r)) != 0 ? "x " : ". ");
+    }
+
+    os << "|\n";
+  }
+
+  os << "  +-----------------+\n";
+  os << "    A B C D E F G H" << std::endl;
+}
 }  // namespace chessgen

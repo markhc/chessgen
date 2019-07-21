@@ -4,6 +4,7 @@ target_sources(${MAIN_TARGET}
     bitboard.cpp
     board.cpp
     move.cpp
+    movegen.cpp
     rays.cpp
   PUBLIC
 )

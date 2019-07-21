@@ -106,6 +106,11 @@ public:
   CastleSide getCastlingRights(Color color) const;
 
   /**
+   * @brief Retrieves a bitboard with the position of the given piece regardless of color
+   */
+  Bitboard getPieces(Piece type) const;
+
+  /**
    * @brief Retrieves a bitboard with the position of the pieces of the given type
    *        belonging to the player of the given color
    */
@@ -133,7 +138,7 @@ public:
   Bitboard getEnPassant() const;
 
   /**
-   * @brief Retrives all pseudo-legal moves for the given piece in the current board
+   * @brief Retrives a bitboard with all the pseudo-legal moves for the given piece in the current board
    *
    * Determines all the squares the given piece type can move to from the source square
    * in the current board configuration. No consideration is done whether the moves are
@@ -146,6 +151,18 @@ public:
    * @returns A bitboard of all the attacked squares
    */
   Bitboard getPossibleMoves(Piece type, Color color, Square fromSquare) const;
+
+  /**
+   * @brief Retrieves a bitboard with all the pieces blocking attacks to the king (possible
+   * discovered checks or pins)
+   *
+   * @param color Color of the king
+   *
+   * @returns A bitboard with the positions of all the pieces blocking possible attacks to the king
+   */
+  Bitboard getKingBlockers(Color color) const;
+
+  Piece getPieceOn(Square sq) const;
 
 private:
   /**

@@ -24,8 +24,8 @@ static constexpr Bitboard moveEast(Bitboard b, int n)
 class Rays
 {
 public:
-  auto operator[](Direction d) -> decltype(auto) { return mRays[to_int(d)]; }
-  auto operator[](Direction d) const -> decltype(auto) { return mRays[to_int(d)]; }
+  auto&       operator[](Direction d) { return mRays[to_int(d)]; }
+  auto const& operator[](Direction d) const { return mRays[to_int(d)]; }
 
 private:
   Bitboard mRays[to_int(Direction::Count)][64];
@@ -34,7 +34,7 @@ private:
 /**
  * @brief Precomputed ray table
  */
-Rays _rays;
+static Rays _rays;
 
 void precomputeTables()
 {

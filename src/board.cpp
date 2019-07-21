@@ -328,6 +328,11 @@ bool Board::canLongCastle(Color color) const
 // -------------------------------------------------------------------------------------------------
 CastleSide Board::getCastlingRights(Color color) const { return mCastleRights[color]; }
 // -------------------------------------------------------------------------------------------------
+Bitboard Board::getPieces(Piece type) const
+{
+  return mPieces[Color::White][type] | mPieces[Color::Black][type];
+}
+// -------------------------------------------------------------------------------------------------
 Bitboard Board::getPieces(Color color, Piece type) const { return mPieces[color][type]; }
 // -------------------------------------------------------------------------------------------------
 Bitboard Board::getAllPieces(Color color) const { return mAllPieces[color]; }
@@ -362,6 +367,40 @@ Bitboard Board::getPossibleMoves(Piece type, Color color, Square fromSquare) con
   }
 }
 // -------------------------------------------------------------------------------------------------
+Bitboard Board::getKingBlockers(Color them) const
+{
+  auto       blockers = Bitboard{};
+  auto const us       = ~them;
+
+  auto       ksIndex         = bitscan_forward(getPieces(them, Piece::King));
+  auto const rooksOrQueens   = getPieces(us, Piece::Queen) | getPieces(us, Piece::Rook);
+  auto const bishopsOrQueens = getPieces(us, Piece::Queen) | getPieces(us, Piece::Rook);
+  auto const rqAttacks =
+      attacks::getSlidingAttacks(Piece::Rook, squareFromIndex(ksIndex), 0ULL) & rooksOrQueens;
+  auto const bqAttacks =
+      attacks::getSlidingAttacks(Piece::Bishop, squareFromIndex(ksIndex), 0ULL) & bishopsOrQueens;
+
+  // Find all sliders aiming towards the king position
+  auto sliders = getAllPieces(us) & (rqAttacks | bqAttacks);
+
+  // Mask the sliders out of the occupancy bits
+  auto const occupancy = getOccupied() ^ sliders;
+
+  auto more_than_one = [](Bitboard b) constexpr { return b & (b - 1); };
+
+  while (sliders) {
+    auto const sniperSq = pop_lsb(sliders);
+    auto const b = BBGetBetween(squareFromIndex(ksIndex), squareFromIndex(sniperSq)) & occupancy;
+
+    if (b && !more_than_one(b)) {
+      blockers |= b;
+      // if (b & getPieces(color_of(getPieceOn(squareFromIndex(ksIndex)))))
+      //  pinners |= sniperSq;
+    }
+  }
+  return blockers;
+}
+// -------------------------------------------------------------------------------------------------
 bool Board::isSquareUnderAttack(Color color, Square square) const
 {
   //
@@ -387,6 +426,17 @@ bool Board::isSquareUnderAttack(Color color, Square square) const
   }
 
   return false;
+}
+// -------------------------------------------------------------------------------------------------
+Piece Board::getPieceOn(Square sq) const
+{
+  auto square = 1ULL << indexFromSquare(sq);
+  for (auto color = 0; color < 2; ++color) {
+    for (auto pt = 0; pt < 6; ++pt) {
+      if (mPieces[color][pt] & square) return Piece(pt);
+    }
+  }
+  return Piece::None;
 }
 // -------------------------------------------------------------------------------------------------
 void Board::addPiece(Piece type, Color color, Square square)

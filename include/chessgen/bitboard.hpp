@@ -31,10 +31,12 @@ constexpr Bitboard Rank7       = Rank1 << (8 * 6);
 constexpr Bitboard Rank8       = Rank1 << (8 * 7);
 }  // namespace Bitboards
 
-inline constexpr void BBSetBit(Bitboard& bb, Square s) { bb |= 1ULL << static_cast<int>(s); }
-inline constexpr void BBClearBit(Bitboard& bb, Square s) { bb &= ~(1ULL << static_cast<int>(s)); }
+extern std::uint64_t SquareBB[64];
 
-inline constexpr Bitboard BBShift(Bitboard& bb, Direction d)
+constexpr void BBSetBit(Bitboard& bb, Square s) { bb |= 1ULL << static_cast<int>(s); }
+constexpr void BBClearBit(Bitboard& bb, Square s) { bb &= ~(1ULL << static_cast<int>(s)); }
+
+constexpr Bitboard BBShift(Bitboard& bb, Direction d)
 {
   switch (d) {
     case Direction::North:
@@ -59,27 +61,12 @@ inline constexpr Bitboard BBShift(Bitboard& bb, Direction d)
   }
 }
 
-extern std::uint64_t SquareBB[64];
-
 inline Bitboard  operator&(Bitboard b, Square s) { return b & SquareBB[indexFromSquare(s)]; }
 inline Bitboard  operator|(Bitboard b, Square s) { return b | SquareBB[indexFromSquare(s)]; }
 inline Bitboard  operator^(Bitboard b, Square s) { return b ^ SquareBB[indexFromSquare(s)]; }
 inline Bitboard& operator|=(Bitboard& b, Square s) { return b |= SquareBB[indexFromSquare(s)]; }
 inline Bitboard& operator^=(Bitboard& b, Square s) { return b ^= SquareBB[indexFromSquare(s)]; }
 
-inline void BBPrettyPrint(std::ostream& os, Bitboard bb)
-{
-  os << "  +-----------------+\n";
-  for (Rank r = Rank::Rank8; r >= Rank::Rank1; --r) {
-    os << static_cast<int>(r) + 1 << " | ";
-    for (File f = File::FileA; f <= File::FileH; ++f) {
-      os << ((bb & makeSquare(f, r)) != 0 ? "x " : ". ");
-    }
-
-    os << "|\n";
-  }
-
-  os << "  +-----------------+\n";
-  os << "    A B C D E F G H" << std::endl;
-}
+Bitboard BBGetBetween(Square s1, Square s2);
+void     BBPrettyPrint(std::ostream& os, Bitboard bb);
 }  // namespace chessgen

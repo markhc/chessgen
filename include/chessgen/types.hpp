@@ -16,7 +16,7 @@ enum class Direction {
   Count,
 };
 
-enum class File {
+enum class File : short {
   FileA,
   FileB,
   FileC,
@@ -30,7 +30,7 @@ enum class File {
   None = Count,
 };
 
-enum class Rank {
+enum class Rank : short {
   Rank1,
   Rank2,
   Rank3,
@@ -44,29 +44,29 @@ enum class Rank {
   None = Count,
 };
 
-inline File operator++(File& f)
+constexpr File operator++(File& f)
 {
   CG_ASSERT(f <= File::FileH);
   return f = File(static_cast<int>(f) + 1);
 }
-inline File operator--(File& f)
+constexpr File operator--(File& f)
 {
   CG_ASSERT(f >= File::FileA);
   return f = File(static_cast<int>(f) - 1);
 }
 
-inline Rank operator++(Rank& r)
+constexpr Rank operator++(Rank& r)
 {
   CG_ASSERT(r <= Rank::Rank8);
   return r = Rank(static_cast<int>(r) + 1);
 }
-inline Rank operator--(Rank& r)
+constexpr Rank operator--(Rank& r)
 {
   CG_ASSERT(r >= Rank::Rank1);
   return r = Rank(static_cast<int>(r) - 1);
 }
 
-enum class Square {
+enum class Square : short {
   // clang-format off
   A1, B1, C1, D1, E1, F1, G1, H1,
   A2, B2, C2, D2, E2, F2, G2, H2,
@@ -79,9 +79,9 @@ enum class Square {
   Count,
   // clang-format on
 };
-constexpr inline Square squareFromIndex(int index) { return Square(index); }
-constexpr inline int    indexFromSquare(Square square) { return int(square); }
-constexpr inline Square makeSquare(File f, Rank r)
+constexpr Square squareFromIndex(int index) { return Square(index); }
+constexpr int    indexFromSquare(Square square) { return int(square); }
+constexpr Square makeSquare(File f, Rank r)
 {
   CG_ASSERT(f >= File::FileA && f <= File::FileH);
   CG_ASSERT(r >= Rank::Rank1 && r <= Rank::Rank8);
@@ -95,15 +95,15 @@ constexpr inline File getFile(Square s)
 constexpr inline Rank getRank(Square s)
 {
   CG_ASSERT(s >= Square::A1 && s <= Square::H8);
-  return Rank(static_cast<int>(s) >> 3);
+  return Rank((static_cast<int>(s) >> 3));
 }
 
-inline Square operator++(Square& s)
+constexpr Square operator++(Square& s)
 {
   CG_ASSERT(s <= Square::H8);
   return s = Square(static_cast<int>(s) + 1);
 }
-inline Square operator--(Square& s)
+constexpr Square operator--(Square& s)
 {
   CG_ASSERT(s >= Square::A1);
   return s = Square(static_cast<int>(s) - 1);
@@ -115,7 +115,7 @@ inline Square operator--(Square& s)
 // require casts for every access into the arrays
 // This is my middle ground solution.
 struct PieceEnum {
-  enum Piece_ {
+  enum Piece_ : short {
     Pawn,
     Rook,
     Knight,
@@ -132,10 +132,13 @@ enum Color {
   White,
   Black,
 };
-inline Color       operator~(Color c) { return c == Color::White ? Color::Black : Color::White; }
+constexpr inline Color operator~(Color c)
+{
+  return c == Color::White ? Color::Black : Color::White;
+}
 inline std::string to_string(Rank r)
 {
-  return std::string{static_cast<char>(static_cast<int>(r) + '0')};
+  return std::string{static_cast<char>(static_cast<int>(r) + 1 + '0')};
 }
 inline std::string to_string(File f)
 {

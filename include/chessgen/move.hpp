@@ -7,34 +7,32 @@
 
 namespace chessgen
 {
-enum class MoveType {
-  Unknown,    ///< Invalid move
-  PawnMove,   ///< A pawn moving forwards or capturing another piece, e.g: "e4", "g8=Q+"
-  PieceMove,  ///< A piece (not a pawn) moving to another square, e.g: "Nf5",
-              ///< "Rad1", "Qa1d2#"
-  ShortCastle,
-  LongCastle,
-};
-
 class Move
 {
+  enum Type : short {
+    Normal,
+    Promotion,
+    Castling,
+    EnPassant,
+  };
+  Move(Square from, Square to, Type type);
+  Move(Square from, Square to, Piece promoted);
+
 public:
-  Move(std::string_view san);
+  Move();
 
-  File   fromFile() const;
-  Rank   fromRank() const;
+  static Move makeQuietMove(Square from, Square to);
+  static Move makeCaptureMove(Square from, Square to);
+  static Move makePromotion(Square from, Square to, Piece promotedTo);
+  static Move makeEnPassant(Square from, Square to);
+  static Move makeCastling(Square from, Square to);
+
+  Square fromSquare() const;
   Square toSquare() const;
-  Piece  pieceType() const;
-  bool   isCapture() const;
-  bool   isCheck() const;
-  bool   isMate() const;
   bool   isPromotion() const;
-  bool   isShortCastle() const;
-  bool   isLongCastle() const;
-  bool   isCastle() const;
+  bool   isCastling() const;
+  bool   isEnPassant() const;
   Piece  promotedTo() const;
-
-  std::string toSan() const;
 
   static int notationToIndex(std::string_view notation)
   {
@@ -43,34 +41,9 @@ public:
   static std::string indexToNotation(int index) { return to_string(Square(index)); }
 
 private:
-  void parsePawnMove(std::string_view san);
-  void parsePieceMove(std::string_view san);
-
-  struct PawnMove {
-    File   fromFile{};
-    Square toSquare{};
-    Piece  promotedTo{};
-    bool   isPromotion{};
-    bool   isCapture{};
-  };
-
-  struct PieceMove {
-    Piece  piece{};
-    File   fromFile{};
-    Rank   fromRank{};
-    Square toSquare{};
-    bool   isCapture{};
-  };
-
-  union MoveInfo {
-    MoveInfo();
-    PawnMove  pawnMove;
-    PieceMove pieceMove;
-  };
-
-  MoveType mType;
-  MoveInfo mInfo;
-  bool     mIsCheck{};
-  bool     mIsMate{};
+  Type   mType{Type::Normal};
+  Piece  mPromotedTo{};
+  Square mFromSquare{};
+  Square mToSquare{};
 };
 }  // namespace chessgen
