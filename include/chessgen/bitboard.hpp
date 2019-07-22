@@ -36,7 +36,7 @@ extern std::uint64_t SquareBB[64];
 constexpr void BBSetBit(Bitboard& bb, Square s) { bb |= 1ULL << static_cast<int>(s); }
 constexpr void BBClearBit(Bitboard& bb, Square s) { bb &= ~(1ULL << static_cast<int>(s)); }
 
-constexpr Bitboard BBShift(Bitboard& bb, Direction d)
+constexpr Bitboard BBShift(Bitboard bb, Direction d)
 {
   switch (d) {
     case Direction::North:

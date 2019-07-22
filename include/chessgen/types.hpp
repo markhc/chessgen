@@ -108,7 +108,57 @@ constexpr Square operator--(Square& s)
   CG_ASSERT(s >= Square::A1);
   return s = Square(static_cast<int>(s) - 1);
 }
+constexpr Square operator+(Square s, Direction d)
+{
+  auto const f = static_cast<int>(getFile(s));
+  auto const r = static_cast<int>(getRank(s));
 
+  switch (d) {
+    case Direction::North:
+      return makeSquare(File(f), Rank(r + 1));
+    case Direction::South:
+      return makeSquare(File(f), Rank(r - 1));
+    case Direction::West:
+      return makeSquare(File(f - 1), Rank(r));
+    case Direction::East:
+      return makeSquare(File(f + 1), Rank(r));
+    case Direction::NorthWest:
+      return makeSquare(File(f - 1), Rank(r + 1));
+    case Direction::NorthEast:
+      return makeSquare(File(f + 1), Rank(r + 1));
+    case Direction::SouthWest:
+      return makeSquare(File(f - 1), Rank(r - 1));
+    case Direction::SouthEast:
+      return makeSquare(File(f + 1), Rank(r - 1));
+    case Direction::Count:
+    default:
+      return s;
+  }
+}
+constexpr Square operator-(Square s, Direction d)
+{
+  switch (d) {
+    case Direction::North:
+      return operator+(s, Direction::South);
+    case Direction::South:
+      return operator+(s, Direction::North);
+    case Direction::West:
+      return operator+(s, Direction::East);
+    case Direction::East:
+      return operator+(s, Direction::West);
+    case Direction::NorthWest:
+      return operator+(s, Direction::SouthEast);
+    case Direction::NorthEast:
+      return operator+(s, Direction::SouthWest);
+    case Direction::SouthWest:
+      return operator+(s, Direction::NorthEast);
+    case Direction::SouthEast:
+      return operator+(s, Direction::NorthWest);
+    case Direction::Count:
+    default:
+      return s;
+  }
+}
 // Pieces are often used as an index into a piece array
 // I don't like using C enums, but C++ scoped enums
 // cannot be implicitly converted to integers, which would

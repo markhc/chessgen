@@ -121,7 +121,9 @@ void Board::loadFen(std::string_view fen)
     }
   };
   auto parseEnPassantSquare = [this](std::string_view str) {
-    if (str != "-") mEnPassant = 1ULL << Move::notationToIndex(str);
+    if (str != "-") {
+      mEnPassant = 1ULL << Move::notationToIndex(str);
+    }
   };
   auto parseHalfMoveNumber = [this](std::string_view str) {
     auto [p, ec] = std::from_chars(str.data(), str.data() + str.size(), mHalfMoves);
@@ -386,8 +388,6 @@ Bitboard Board::getKingBlockers(Color them) const
   // Mask the sliders out of the occupancy bits
   auto const occupancy = getOccupied() ^ sliders;
 
-  auto more_than_one = [](Bitboard b) constexpr { return b & (b - 1); };
-
   while (sliders) {
     auto const sniperSq = pop_lsb(sliders);
     auto const b = BBGetBetween(squareFromIndex(ksIndex), squareFromIndex(sniperSq)) & occupancy;
@@ -438,6 +438,45 @@ Piece Board::getPieceOn(Square sq) const
   }
   return Piece::None;
 }
+// -------------------------------------------------------------------------------------------------
+Bitboard Board::getCheckSquares(Color color, Piece piece) const
+{
+  if (piece == Piece::King) return 0;
+
+  return getPossibleMoves(piece, color, getKingSquare(~color));
+}
+// -------------------------------------------------------------------------------------------------
+Bitboard Board::getCheckers() const
+{
+  auto const us = getActivePlayer();
+
+  if (!isInCheck(us)) return 0;
+
+  auto const ksq = getKingSquare(us);
+
+  auto const pawns   = getPossibleMoves(Piece::Pawn, us, ksq) & getPieces(~us, Piece::Pawn);
+  auto const bishops = getPossibleMoves(Piece::Bishop, us, ksq) & getPieces(~us, Piece::Bishop);
+  auto const rooks   = getPossibleMoves(Piece::Rook, us, ksq) & getPieces(~us, Piece::Rook);
+  auto const queens  = getPossibleMoves(Piece::Queen, us, ksq) & getPieces(~us, Piece::Queen);
+
+  return pawns | bishops | rooks | queens;
+}
+// -------------------------------------------------------------------------------------------------
+Square Board::getKingSquare(Color color) const
+{
+  return squareFromIndex(bitscan_forward(getPieces(color, Piece::King)));
+}
+// -------------------------------------------------------------------------------------------------
+Square Board::getCastlingRook(Color color, CastleSide side) const
+{
+  // TODO: Support Chess960
+  if (side == CastleSide::King)
+    return color == Color::White ? Square::H1 : Square::H8;
+  else
+    return color == Color::White ? Square::A1 : Square::A8;
+}
+// -------------------------------------------------------------------------------------------------
+Square Board::getEnPassantSquare() const { return squareFromIndex(bitscan_forward(mEnPassant)); }
 // -------------------------------------------------------------------------------------------------
 void Board::addPiece(Piece type, Color color, Square square)
 {

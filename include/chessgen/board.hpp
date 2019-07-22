@@ -162,7 +162,12 @@ public:
    */
   Bitboard getKingBlockers(Color color) const;
 
-  Piece getPieceOn(Square sq) const;
+  Piece    getPieceOn(Square sq) const;
+  Bitboard getCheckSquares(Color color, Piece piece) const;
+  Bitboard getCheckers() const;
+  Square   getKingSquare(Color color) const;
+  Square   getCastlingRook(Color color, CastleSide side) const;
+  Square   getEnPassantSquare() const;
 
 private:
   /**
@@ -203,9 +208,9 @@ private:
 
   Bitboard   mPieces[2][6]{};
   Bitboard   mAllPieces[2]{};
-  Bitboard   mOccupied;
-  Bitboard   mEnPassant;
-  Color      mTurn;
+  Bitboard   mOccupied{};
+  Bitboard   mEnPassant{};
+  Color      mTurn{};
   int        mHalfMoves{};
   int        mFullMove{};
   CastleSide mCastleRights[2]{};

@@ -24,9 +24,7 @@ Move::Move(Square from, Square to, Piece promoted)
   mType       = Promotion;
 }
 // -----------------------------------------------------------------------------
-Move Move::makeQuietMove(Square from, Square to) { return Move{from, to, Normal}; }
-// -----------------------------------------------------------------------------
-Move Move::makeCaptureMove(Square from, Square to) { return Move{from, to, Normal}; }
+Move Move::makeMove(Square from, Square to) { return Move{from, to, Normal}; }
 // -----------------------------------------------------------------------------
 Move Move::makePromotion(Square from, Square to, Piece promotedTo)
 {

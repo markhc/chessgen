@@ -9,6 +9,8 @@
 #define intrin_popcount __builtin_popcountll
 #define intrin_forward_scan __builtin_ffsll
 #define intrin_reverse_scan __builtin_clzll
+#define intrin_count_leading_zeroes __builtin_clzll
+#define intrin_count_trailing_zeroes __builtin_ctzll
 #elif defined(_MSC_VER)
 /**
  * Microsoft Visual Studio

@@ -123,6 +123,7 @@ Bitboard getSlidingAttacks(Piece piece, Square from, Bitboard blockers)
     case Piece::King:
     case Piece::Pawn:
     case Piece::Knight:
+    case Piece::Count:
     default:
       throw std::runtime_error("Not a sliding piece");
   }
