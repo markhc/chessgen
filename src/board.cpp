@@ -394,8 +394,6 @@ Bitboard Board::getKingBlockers(Color them) const
 
     if (b && !more_than_one(b)) {
       blockers |= b;
-      // if (b & getPieces(color_of(getPieceOn(squareFromIndex(ksIndex)))))
-      //  pinners |= sniperSq;
     }
   }
   return blockers;
@@ -455,11 +453,12 @@ Bitboard Board::getCheckers() const
   auto const ksq = getKingSquare(us);
 
   auto const pawns   = getPossibleMoves(Piece::Pawn, us, ksq) & getPieces(~us, Piece::Pawn);
+  auto const knights = getPossibleMoves(Piece::Knight, us, ksq) & getPieces(~us, Piece::Knight);
   auto const bishops = getPossibleMoves(Piece::Bishop, us, ksq) & getPieces(~us, Piece::Bishop);
   auto const rooks   = getPossibleMoves(Piece::Rook, us, ksq) & getPieces(~us, Piece::Rook);
   auto const queens  = getPossibleMoves(Piece::Queen, us, ksq) & getPieces(~us, Piece::Queen);
 
-  return pawns | bishops | rooks | queens;
+  return pawns | knights | bishops | rooks | queens;
 }
 // -------------------------------------------------------------------------------------------------
 Square Board::getKingSquare(Color color) const
@@ -477,6 +476,66 @@ Square Board::getCastlingRook(Color color, CastleSide side) const
 }
 // -------------------------------------------------------------------------------------------------
 Square Board::getEnPassantSquare() const { return squareFromIndex(bitscan_forward(mEnPassant)); }
+// -------------------------------------------------------------------------------------------------
+bool Board::isMoveLegal(Move const& move) const
+{
+  auto const us   = getActivePlayer();
+  auto const from = move.fromSquare();
+  auto const to   = move.toSquare();
+  auto const ksq  = getKingSquare(us);
+
+  // En passant captures are a tricky special case. Because they are rather
+  // uncommon, we do it simply by testing whether the king is attacked after
+  // the move is made.
+  if (move.isEnPassant()) {
+    auto const capsq    = to - (us == Color::White ? Direction::North : Direction::South);
+    auto const occupied = (getOccupied() ^ from ^ capsq) | to;
+
+    CG_ASSERT(to == getEnPassantSquare());
+    CG_ASSERT((getPieces(~us, Piece::Pawn) & capsq) != 0);
+    CG_ASSERT(getPieceOn(to) == Piece::None);
+
+    return !(attacks::getSlidingAttacks(Piece::Rook, ksq, occupied) &
+             (getPieces(~us, Piece::Queen) | getPieces(~us, Piece::Rook))) &&
+           !(attacks::getSlidingAttacks(Piece::Bishop, ksq, occupied) &
+             (getPieces(~us, Piece::Queen) | getPieces(~us, Piece::Bishop)));
+  }
+
+  //// Castling moves generation does not check if the castling path is clear of
+  //// enemy attacks, it is delayed at a later time: now!
+  // if (type_of(m) == CASTLING) {
+  //  // After castling, the rook and king final positions are the same in
+  //  // Chess960 as they would be in standard chess.
+  //  to             = relative_square(us, to > from ? SQ_G1 : SQ_C1);
+  //  Direction step = to > from ? WEST : EAST;
+  //
+  //  for (Square s = to; s != from; s += step)
+  //    if (attackers_to(s) & pieces(~us)) return false;
+  //
+  //  // In case of Chess960, verify that when moving the castling rook we do
+  //  // not discover some hidden checker.
+  //  // For instance an enemy queen in SQ_A1 when castling rook is in SQ_B1.
+  //  return !chess960 || !(attacks_bb<ROOK>(to, pieces() ^ to_sq(m)) & pieces(~us, ROOK, QUEEN));
+  //}
+  //
+  // If the moving piece is a king, check whether the destination square is
+  // attacked by the opponent.
+  if (ksq == from) {
+    auto const pawns   = getPossibleMoves(Piece::Pawn, us, to) & getPieces(~us, Piece::Pawn);
+    auto const knights = getPossibleMoves(Piece::Knight, us, to) & getPieces(~us, Piece::Knight);
+    auto const bishops = getPossibleMoves(Piece::Bishop, us, to) & getPieces(~us, Piece::Bishop);
+    auto const rooks   = getPossibleMoves(Piece::Rook, us, to) & getPieces(~us, Piece::Rook);
+    auto const queens  = getPossibleMoves(Piece::Queen, us, to) & getPieces(~us, Piece::Queen);
+
+    return !(pawns | knights | bishops | rooks | queens);
+  }
+
+  // A non-king move is legal if and only if it is not pinned or it
+  // is moving along the ray towards or away from the king.
+  auto b = !(getKingBlockers(us) & from) || (attacks::getLineBetween(from, to) & ksq);
+
+  return b;
+}
 // -------------------------------------------------------------------------------------------------
 void Board::addPiece(Piece type, Color color, Square square)
 {

@@ -168,6 +168,7 @@ public:
   Square   getKingSquare(Color color) const;
   Square   getCastlingRook(Color color, CastleSide side) const;
   Square   getEnPassantSquare() const;
+  bool     isMoveLegal(Move const& move) const;
 
 private:
   /**

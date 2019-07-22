@@ -3,6 +3,7 @@
 #include "chessgen/board.hpp"
 #include "chessgen/intrinsics.hpp"
 
+#include <algorithm>
 #include <iostream>
 #include <type_traits>
 
@@ -114,7 +115,36 @@ auto generateMoves<MoveType::Evasions>(Board const& board) -> std::vector<Move>
   return moves;
 }
 template <>
-auto generateMoves<MoveType::Legal>(Board const& board) -> std::vector<Move>;
+auto generateMoves<MoveType::Legal>(Board const& board) -> std::vector<Move>
+{
+  auto const us           = board.getActivePlayer();
+  auto const pinnedPieces = board.getKingBlockers(us) & board.getAllPieces(us);
+  auto const ksq          = board.getKingSquare(us);
+
+  auto moves = std::vector<Move>{};
+  if (board.isInCheck(us))
+    moves = generateMoves<MoveType::Evasions>(board);
+  else
+    moves = generateMoves<MoveType::NonEvasions>(board);
+
+  auto newEnd = std::remove_if(moves.begin(), moves.end(), [&](Move const& move) {
+    // There are 2 situations in which a move can be invalid:
+    // - If there are pinned pieces, it cannot be moved in a way that places the king in check
+    // - If we are moving the king, it must not be placed in check
+    //
+    // If we could detect possible en passant captures that leave the king in check as a pinned
+    // piece that would be nice, but since we cannot, we also check for that specific scenario here
+    //
+    if (pinnedPieces != 0 || move.fromSquare() == ksq || move.isEnPassant())
+      return !board.isMoveLegal(move);
+
+    return false;
+  });
+
+  moves.erase(newEnd, moves.end());
+
+  return moves;
+}
 
 template <Color Us, MoveType Type>
 void generateAll(Board const& board, Bitboard target, std::vector<Move>& moves)
