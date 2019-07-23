@@ -72,17 +72,16 @@ auto generateMoves<MoveType::QuietChecks>(Board const& board) -> std::vector<Mov
 template <>
 auto generateMoves<MoveType::Evasions>(Board const& board) -> std::vector<Move>
 {
-  auto moves = std::vector<Move>{};
+  CG_ASSERT(board.isInCheck());
+  CG_ASSERT(board.getCheckers());
 
-  auto const us = board.getActivePlayer();
-
-  CG_ASSERT(board.isInCheck(us));
-
-  auto ksq           = board.getKingSquare(us);
-  auto sliderAttacks = 0;
-  auto sliders       = board.getCheckers() &       //
-                 ~board.getPieces(Piece::Pawn) &   //
-                 ~board.getPieces(Piece::Knight);  //
+  auto       moves         = std::vector<Move>{};
+  auto const us            = board.getActivePlayer();
+  auto       ksq           = board.getKingSquare(us);
+  auto       sliderAttacks = Bitboard{};
+  auto       sliders       = board.getCheckers() &  //
+                 ~board.getPieces(Piece::Pawn) &    //
+                 ~board.getPieces(Piece::Knight);   //
 
   // Find all the squares attacked by slider checkers. We will remove them from
   // the king evasions in order to skip known illegal moves, which avoids any
@@ -122,7 +121,7 @@ auto generateMoves<MoveType::Legal>(Board const& board) -> std::vector<Move>
   auto const ksq          = board.getKingSquare(us);
 
   auto moves = std::vector<Move>{};
-  if (board.isInCheck(us))
+  if (board.isInCheck())
     moves = generateMoves<MoveType::Evasions>(board);
   else
     moves = generateMoves<MoveType::NonEvasions>(board);
@@ -361,7 +360,7 @@ void generatePawnMoves(Board const& board, Bitboard target, std::vector<Move>& m
     if (board.getEnPassant() != 0) {
       auto const ep = board.getEnPassantSquare();
 
-      CG_ASSERT(getRank(ep) == (Us == Color::White ? Rank::Rank6 : Rank::Rank2));
+      CG_ASSERT(getRank(ep) == (Us == Color::White ? Rank::Rank6 : Rank::Rank3));
 
       auto pawnSquare = ep - Up;
 

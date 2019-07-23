@@ -43,9 +43,8 @@ std::vector<std::basic_string<CharT>> stringSplit(
 }
 // -----------------------------------------------------------------------------
 template <typename CharT>
-constexpr bool stringContains(
-    detail::type_identity_t<std::basic_string_view<CharT>> source,
-    CharT                                                  character)
+constexpr bool stringContains(detail::type_identity_t<std::basic_string_view<CharT>> source,
+                              CharT                                                  character)
 {
   return source.find(character) != std::basic_string_view<CharT>::npos;
 }
@@ -81,9 +80,8 @@ constexpr char stringPopBack(SView& view)
 template <typename E>
 constexpr auto enumHasFlag(E value, E flag)
 {
-  static_assert(std::is_enum_v<E>,
-                "\"enumHasFlag\" only accepts enumeration types");
-  return (value & flag) != E{std::underlying_type_t<E>(0)};
+  static_assert(std::is_enum_v<E>, "\"enumHasFlag\" only accepts enumeration types");
+  return (value & flag) != E(std::underlying_type_t<E>(0));
 }
 // -----------------------------------------------------------------------------
 }  // namespace chessgen

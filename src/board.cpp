@@ -263,18 +263,34 @@ int Board::getFullMove() const { return mFullMove; }
 // -------------------------------------------------------------------------------------------------
 bool Board::isInitialPosition() const { return getFen() == _initialFen; }
 // -------------------------------------------------------------------------------------------------
+bool Board::isInsufficientMaterial() const
+{
+  auto const toMove = getActivePlayer();
+
+  // Check if only kings are left
+  if (pop_count(getOccupied()) == 2) {
+    return true;
+  }
+  // Check King+Knight vs King scenarios
+  if ((getAllPieces(toMove) & ~getPieces(toMove, Piece::Knight)) == 0) {
+    return true;
+  }
+
+  return false;
+}
+// -------------------------------------------------------------------------------------------------
 Color Board::getActivePlayer() const { return mTurn; }
 // -------------------------------------------------------------------------------------------------
-bool Board::isInCheck(Color color) const
+bool Board::isInCheck() const
 {
-  auto const kingSquareIndex = bitscan_forward(getPieces(color, Piece::King));
+  auto const kingSquareIndex = bitscan_forward(getPieces(getActivePlayer(), Piece::King));
 
   // no king?
   if (kingSquareIndex == -1) {
     return false;
   }
 
-  return isSquareUnderAttack(~color, squareFromIndex(kingSquareIndex));
+  return isSquareUnderAttack(~getActivePlayer(), squareFromIndex(kingSquareIndex));
 }
 // -------------------------------------------------------------------------------------------------
 bool Board::canShortCastle(Color color) const
@@ -446,10 +462,9 @@ Bitboard Board::getCheckSquares(Color color, Piece piece) const
 // -------------------------------------------------------------------------------------------------
 Bitboard Board::getCheckers() const
 {
-  auto const us = getActivePlayer();
+  if (!isInCheck()) return 0;
 
-  if (!isInCheck(us)) return 0;
-
+  auto const us  = getActivePlayer();
   auto const ksq = getKingSquare(us);
 
   auto const pawns   = getPossibleMoves(Piece::Pawn, us, ksq) & getPieces(~us, Piece::Pawn);
@@ -501,23 +516,6 @@ bool Board::isMoveLegal(Move const& move) const
              (getPieces(~us, Piece::Queen) | getPieces(~us, Piece::Bishop)));
   }
 
-  //// Castling moves generation does not check if the castling path is clear of
-  //// enemy attacks, it is delayed at a later time: now!
-  // if (type_of(m) == CASTLING) {
-  //  // After castling, the rook and king final positions are the same in
-  //  // Chess960 as they would be in standard chess.
-  //  to             = relative_square(us, to > from ? SQ_G1 : SQ_C1);
-  //  Direction step = to > from ? WEST : EAST;
-  //
-  //  for (Square s = to; s != from; s += step)
-  //    if (attackers_to(s) & pieces(~us)) return false;
-  //
-  //  // In case of Chess960, verify that when moving the castling rook we do
-  //  // not discover some hidden checker.
-  //  // For instance an enemy queen in SQ_A1 when castling rook is in SQ_B1.
-  //  return !chess960 || !(attacks_bb<ROOK>(to, pieces() ^ to_sq(m)) & pieces(~us, ROOK, QUEEN));
-  //}
-  //
   // If the moving piece is a king, check whether the destination square is
   // attacked by the opponent.
   if (ksq == from) {
@@ -526,8 +524,9 @@ bool Board::isMoveLegal(Move const& move) const
     auto const bishops = getPossibleMoves(Piece::Bishop, us, to) & getPieces(~us, Piece::Bishop);
     auto const rooks   = getPossibleMoves(Piece::Rook, us, to) & getPieces(~us, Piece::Rook);
     auto const queens  = getPossibleMoves(Piece::Queen, us, to) & getPieces(~us, Piece::Queen);
+    auto const king    = getPossibleMoves(Piece::King, us, to) & getPieces(~us, Piece::King);
 
-    return !(pawns | knights | bishops | rooks | queens);
+    return !(pawns | knights | bishops | rooks | queens | king);
   }
 
   // A non-king move is legal if and only if it is not pinned or it
@@ -535,6 +534,70 @@ bool Board::isMoveLegal(Move const& move) const
   auto b = !(getKingBlockers(us) & from) || (attacks::getLineBetween(from, to) & ksq);
 
   return b;
+}
+// -------------------------------------------------------------------------------------------------
+void Board::makeMove(Move move)
+{
+  auto const us   = getActivePlayer();
+  auto const them = ~us;
+  auto const from = move.fromSquare();
+  auto const to   = move.toSquare();
+
+  if (!(getAllPieces(us) & from)) {
+    CG_ASSERT(false);
+    return;
+  }
+
+  if (getPieceOn(to) != Piece::None && !(getAllPieces(them) & to)) {
+    CG_ASSERT(false);
+    return;
+  }
+
+  mEnPassant = 0ULL;
+
+  if (move.isCastling()) {
+    auto const kingside = to > from;
+    auto const rookFrom = to;
+
+    auto const rookTo = [&] {
+      if (us == Color::White)
+        return kingside ? Square::F1 : Square::D1;
+      else
+        return kingside ? Square::F8 : Square::D8;
+    }();
+
+    auto const kingTo = [&] {
+      if (us == Color::White)
+        return kingside ? Square::G1 : Square::C1;
+      else
+        return kingside ? Square::G8 : Square::C8;
+    }();
+
+    removePiece(Piece::Rook, us, rookFrom);
+    removePiece(Piece::King, us, from);
+    addPiece(Piece::Rook, us, rookTo);
+    addPiece(Piece::King, us, kingTo);
+
+    mCastleRights[us] = CastleSide::None;
+  } else {
+    auto captured = move.isEnPassant() ? Piece::Pawn : getPieceOn(to);
+
+    if (captured != Piece::None) {
+      mHalfMoves = 0;  // Reset fifty-move counter on captures
+      removePiece(captured, them, to);
+    }
+
+    movePiece(getPieceOn(from), us, from, to);
+  }
+
+  if (move.isPromotion()) {
+    removePiece(Piece::Pawn, us, to);
+    addPiece(move.promotedTo(), us, to);
+  }
+
+  if (us == Color::Black) ++mFullMove;
+
+  mTurn = ~mTurn;
 }
 // -------------------------------------------------------------------------------------------------
 void Board::addPiece(Piece type, Color color, Square square)
@@ -553,6 +616,38 @@ void Board::removePiece(Piece type, Color color, Square square)
   mAllPieces[color]    &= ~(1ULL << indexFromSquare(square));
   mOccupied            &= ~(1ULL << indexFromSquare(square));
   // clang-format on
+}
+// -------------------------------------------------------------------------------------------------
+void Board::movePiece(Piece type, Color color, Square from, Square to)
+{
+  if (type == Piece::King) {
+    mCastleRights[color] = CastleSide::None;
+  } else if (type == Piece::Rook) {
+    if (color == Color::White) {
+      if (from == Square::A1)
+        mCastleRights[color] = mCastleRights[color] & ~CastleSide::Queen;
+      else if (from == Square::H1)
+        mCastleRights[color] = mCastleRights[color] & ~CastleSide::King;
+    } else {
+      if (from == Square::A8)
+        mCastleRights[color] = mCastleRights[color] & ~CastleSide::Queen;
+      else if (from == Square::H8)
+        mCastleRights[color] = mCastleRights[color] & ~CastleSide::King;
+    }
+  } else if (type == Piece::Pawn) {
+    auto const indexFrom = indexFromSquare(from);
+    auto const indexto   = indexFromSquare(to);
+    if (std::abs(indexFrom - indexto) == 16) {
+      mEnPassant = 1ULL << (indexto + (color == Color::White ? -8 : 8));
+    }
+    // Reset fifty-rule clock on pawn moves
+    mHalfMoves = 0;
+  }
+
+  removePiece(type, color, from);
+  addPiece(type, color, to);
+
+  updateBitboards();
 }
 // -------------------------------------------------------------------------------------------------
 void Board::clearBitboards()

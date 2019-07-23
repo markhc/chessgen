@@ -9,7 +9,7 @@
 
 namespace chessgen
 {
-enum class CastleSide {
+enum CastleSide {
   None  = (0),       ///< Players cannot castle
   King  = (1 << 0),  ///< White can castle on the king side
   Queen = (1 << 1),  ///< Black can castle on the king side
@@ -52,9 +52,7 @@ public:
    */
   std::string prettyPrint(bool useUnicodeChars = true);
 
-  void makeMove(std::string_view move);
   void makeMove(Move move);
-  Move undoMove();
 
   /**
    * @brief Gets the number of halfmoves since the last capture or pawn move
@@ -81,14 +79,19 @@ public:
   bool isInitialPosition() const;
 
   /**
+   * @brief Detect whether the board is drawn by insufficient material
+   */
+  bool isInsufficientMaterial() const;
+
+  /**
    * @brief Gets the current active player
    */
   Color getActivePlayer() const;
 
   /**
-   * @brief Checks whether the given color is in check by the enemy
+   * @brief Checks whether the active player is in check
    */
-  bool isInCheck(Color color) const;
+  bool isInCheck() const;
 
   /**
    * @brief Checks whether the given color can castle king-side
@@ -188,6 +191,11 @@ private:
    * @brief Removes a piece from the board and updates all related bitboards
    */
   void removePiece(Piece type, Color color, Square square);
+
+  /**
+   * @brief Moves a piece from a square to another, adjusting the necessary bitboards and flags
+   */
+  void movePiece(Piece type, Color color, Square from, Square to);
 
   /**
    * @brief Clears all bitboard (removes all pieces from the board)

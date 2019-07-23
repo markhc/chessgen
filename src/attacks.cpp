@@ -246,7 +246,7 @@ Bitboard getRookAttacksSlow(int square, Bitboard blockers)
   // Direction::West
   attacks |= rays::getRayForSquare(Direction::West, square);
   if (rays::getRayForSquare(Direction::West, square) & blockers) {
-    auto maskedBlockers = rays::getRayForSquare(Direction::South, square) & blockers;
+    auto maskedBlockers = rays::getRayForSquare(Direction::West, square) & blockers;
     attacks &= ~(rays::getRayForSquare(Direction::West, bitscan_reverse(maskedBlockers)));
   }
 

@@ -8,20 +8,34 @@ TEST(MoveGenTests, PawnMoves)
   using namespace chessgen;
   using namespace chessgen::movegen;
 
-  Board board{"7k/3q4/8/8/4p3/8/3P4/3K4 w - - 0 1"};
+  srand(123123);
 
-  std::cout << "Legal: \n";
-  for (auto&& move : generateMoves<MoveType::Legal>(board)) {
-    if (move.isPromotion()) {
-      std::cout << to_string(move.fromSquare()) << " -> " << to_string(move.toSquare()) << " - "
-                << to_string(move.promotedTo()) << std::endl;
-    } else if (move.isEnPassant()) {
-      std::cout << to_string(move.fromSquare()) << " -> " << to_string(move.toSquare()) << " EP\n";
-    } else if (move.isCastling()) {
-      std::cout << to_string(move.fromSquare()) << " -> " << to_string(move.toSquare())
-                << " O-O O-O-O\n";
-    } else {
-      std::cout << to_string(move.fromSquare()) << " -> " << to_string(move.toSquare()) << std::endl;
+  Board board{};
+
+  while (true) {
+    auto moves = generateMoves<MoveType::Legal>(board);
+
+    if (moves.size() == 0) break;
+
+    // pick a random move
+
+    auto const i = random() % moves.size();
+
+    std::cout << "Playing: " << to_string(moves[i].fromSquare()) << " "
+              << to_string(moves[i].toSquare()) << std::endl;
+    board.makeMove(moves[i]);
+
+    std::cout << board.prettyPrint() << std::endl;
+    std::cout << board.getFen() << std::endl;
+    if (board.isInsufficientMaterial()) {
+      std::cout << "Game is drawn by insufficient material\n";
+      break;
     }
+  }
+  if (board.isInCheck()) {
+    std::cout << ((board.getActivePlayer() == Color::White) ? "Black" : "White")
+              << " wins by checkmate\n";
+  } else {
+    std::cout << "Game is drawn by stalemate\n";
   }
 }
