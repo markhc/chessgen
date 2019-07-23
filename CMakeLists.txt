@@ -64,7 +64,6 @@ target_include_directories(${MAIN_TARGET} PUBLIC
 )
 target_compile_features(${MAIN_TARGET} PUBLIC cxx_std_17)
 
-
 target_link_libraries(${MAIN_TARGET} PUBLIC fmt::fmt fmt::fmt-header-only)
 add_subdirectory(src)
 add_subdirectory(test)

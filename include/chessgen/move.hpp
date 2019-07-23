@@ -9,12 +9,15 @@ namespace chessgen
 {
 class Move
 {
+public:
   enum Type : short {
     Normal,
     Promotion,
     Castling,
     EnPassant,
   };
+
+private:
   Move(Square from, Square to, Type type);
   Move(Square from, Square to, Piece promoted);
 
@@ -26,6 +29,7 @@ public:
   static Move makeEnPassant(Square from, Square to);
   static Move makeCastling(Square from, Square to);
 
+  Type   getType() const;
   Square fromSquare() const;
   Square toSquare() const;
   bool   isPromotion() const;

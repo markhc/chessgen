@@ -1,5 +1,7 @@
 #pragma once
 
+#include <atomic>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -50,7 +52,7 @@ public:
    *
    * @returns The current boars position in a string representation
    */
-  std::string prettyPrint(bool useUnicodeChars = true);
+  std::string prettyPrint(bool useUnicodeChars = true) const;
 
   void makeMove(Move move);
 
@@ -173,15 +175,17 @@ public:
   Square   getEnPassantSquare() const;
   bool     isMoveLegal(Move const& move) const;
 
-private:
+  std::vector<Move> const& getLegalMoves() const;
+
   /**
    * @brief Determines if the given square is under attack by the given color.
    *
-   * @param color   The attacking side
+   * @param enemy   The attacking side
    * @param square  The square index
    */
-  bool isSquareUnderAttack(Color color, Square square) const;
+  bool isSquareUnderAttack(Color enemy, Square square) const;
 
+private:
   /**
    * @brief Adds a piece to the board and updates all related bitboards
    */
@@ -215,13 +219,16 @@ private:
   Bitboard getRookAttacksForSquare(Square square, Color color) const;
   Bitboard getQueenAttacksForSquare(Square square, Color color) const;
 
-  Bitboard   mPieces[2][6]{};
-  Bitboard   mAllPieces[2]{};
-  Bitboard   mOccupied{};
-  Bitboard   mEnPassant{};
-  Color      mTurn{};
-  int        mHalfMoves{};
-  int        mFullMove{};
-  CastleSide mCastleRights[2]{};
+  Bitboard                  mPieces[2][6]{};
+  Bitboard                  mAllPieces[2]{};
+  Bitboard                  mOccupied{};
+  Bitboard                  mEnPassant{};
+  Color                     mTurn{};
+  int                       mHalfMoves{};
+  int                       mFullMove{};
+  CastleSide                mCastleRights[2]{};
+  mutable std::vector<Move> mLegalMoves;
+  mutable std::atomic_bool  mBoardChanged{true};
+  mutable std::mutex        mMovesMutex{};
 };
 }  // namespace chessgen

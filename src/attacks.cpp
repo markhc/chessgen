@@ -95,7 +95,7 @@ void precomputeTables()
     for (auto&& pt : {Piece::Bishop, Piece::Rook}) {
       for (Square s2 = Square::A1; s2 <= Square::H8; ++s2) {
         if (getSlidingAttacks(pt, s1, 0ULL) & s2) {
-          lines[to_int(s1)][to_int(s2)] =
+          lines[makeIndex(s1)][makeIndex(s2)] =
               ((getSlidingAttacks(pt, s1, 0ULL) & getSlidingAttacks(pt, s2, 0ULL)) | s1) | s2;
         }
       }
@@ -103,23 +103,23 @@ void precomputeTables()
   }
 }
 // -------------------------------------------------------------------------------------------------
-Bitboard getLineBetween(Square s1, Square s2) { return lines[to_int(s1)][to_int(s2)]; }
+Bitboard getLineBetween(Square s1, Square s2) { return lines[makeIndex(s1)][makeIndex(s2)]; }
 // -------------------------------------------------------------------------------------------------
 Bitboard getNonSlidingAttacks(Piece piece, Square from, Color color)
 {
-  return nonSlidingAttacks[color][piece][indexFromSquare(from)];
+  return nonSlidingAttacks[color][piece][makeIndex(from)];
 }
 // -------------------------------------------------------------------------------------------------
 Bitboard getSlidingAttacks(Piece piece, Square from, Bitboard blockers)
 {
   switch (piece) {
     case Piece::Bishop:
-      return getBishopAttacks(indexFromSquare(from), blockers);
+      return getBishopAttacks(makeIndex(from), blockers);
     case Piece::Rook:
-      return getRookAttacks(indexFromSquare(from), blockers);
+      return getRookAttacks(makeIndex(from), blockers);
     case Piece::Queen:
-      return getBishopAttacks(indexFromSquare(from), blockers) |
-             getRookAttacks(indexFromSquare(from), blockers);
+      return getBishopAttacks(makeIndex(from), blockers) |
+             getRookAttacks(makeIndex(from), blockers);
     case Piece::King:
     case Piece::Pawn:
     case Piece::Knight:

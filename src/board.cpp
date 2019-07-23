@@ -11,6 +11,7 @@
 #include "chessgen/attacks.hpp"
 #include "chessgen/helpers.hpp"
 #include "chessgen/intrinsics.hpp"
+#include "chessgen/movegen.hpp"
 #include "chessgen/rays.hpp"
 
 namespace chessgen
@@ -209,30 +210,43 @@ std::string Board::getFen() const
   return fen;
 }
 // -------------------------------------------------------------------------------------------------
-std::string Board::prettyPrint(bool useUnicodeChars)
+std::string Board::prettyPrint(bool useUnicodeChars) const
 {
-  std::string_view unicodePieces[2][6];
-  unicodePieces[Color::White][Piece::King]   = useUnicodeChars ? "\u2654" : "K";
-  unicodePieces[Color::White][Piece::Queen]  = useUnicodeChars ? "\u2655" : "Q";
-  unicodePieces[Color::White][Piece::Rook]   = useUnicodeChars ? "\u2656" : "R";
-  unicodePieces[Color::White][Piece::Bishop] = useUnicodeChars ? "\u2657" : "B";
-  unicodePieces[Color::White][Piece::Knight] = useUnicodeChars ? "\u2658" : "N";
-  unicodePieces[Color::White][Piece::Pawn]   = useUnicodeChars ? "\u2659" : "P";
-  unicodePieces[Color::Black][Piece::King]   = useUnicodeChars ? "\u265A" : "k";
-  unicodePieces[Color::Black][Piece::Queen]  = useUnicodeChars ? "\u265B" : "q";
-  unicodePieces[Color::Black][Piece::Rook]   = useUnicodeChars ? "\u265C" : "r";
-  unicodePieces[Color::Black][Piece::Bishop] = useUnicodeChars ? "\u265D" : "b";
-  unicodePieces[Color::Black][Piece::Knight] = useUnicodeChars ? "\u265E" : "n";
-  unicodePieces[Color::Black][Piece::Pawn]   = useUnicodeChars ? "\u265F" : "p";
+  static std::string_view charPieces[2][6] = {
+      {
+          useUnicodeChars ? "\u2659" : "P",
+          useUnicodeChars ? "\u2657" : "B",
+          useUnicodeChars ? "\u2658" : "N",
+          useUnicodeChars ? "\u2656" : "R",
+          useUnicodeChars ? "\u2655" : "Q",
+          useUnicodeChars ? "\u2654" : "K",
+      },
+      {
+          useUnicodeChars ? "\u265F" : "p",
+          useUnicodeChars ? "\u265D" : "b",
+          useUnicodeChars ? "\u265E" : "n",
+          useUnicodeChars ? "\u265C" : "r",
+          useUnicodeChars ? "\u265B" : "q",
+          useUnicodeChars ? "\u265A" : "k",
+      },
+  };
 
   std::stringstream ss;
 
   auto printIcon = [&](Square square) {
-    for (auto color : {Color::White, Color::Black}) {
-      for (auto piece :
-           {Piece::King, Piece::Queen, Piece::Rook, Piece::Bishop, Piece::Knight, Piece::Pawn}) {
+    auto const pieces = {
+        Piece::Pawn,
+        Piece::Bishop,
+        Piece::Knight,
+        Piece::Rook,
+        Piece::Queen,
+        Piece::King,
+    };
+
+    for (auto&& color : {Color::White, Color::Black}) {
+      for (auto&& piece : pieces) {
         if (mPieces[color][piece] & square) {
-          ss << unicodePieces[color][piece] << ' ';
+          ss << charPieces[color][piece] << ' ';
           return true;
         }
       }
@@ -241,12 +255,16 @@ std::string Board::prettyPrint(bool useUnicodeChars)
   };
 
   ss << "  +-----------------+\n";
-  for (Rank r = Rank::Rank8; r >= Rank::Rank1; --r) {
-    ss << static_cast<int>(r) + 1 << " | ";
-    for (File f = File::FileA; f <= File::FileH; ++f) {
-      auto square = makeSquare(f, r);
 
-      if (!printIcon(square)) ss << ". ";
+  // For each rank
+  for (auto r = Rank::Rank8; r >= Rank::Rank1; --r) {
+    // print the rank number
+    ss << static_cast<int>(r) + 1 << " | ";
+    // and each file
+    for (auto f = File::FileA; f <= File::FileH; ++f) {
+      if (!printIcon(makeSquare(f, r))) {
+        ss << ". ";
+      }
     }
 
     ss << "|\n";
@@ -290,7 +308,7 @@ bool Board::isInCheck() const
     return false;
   }
 
-  return isSquareUnderAttack(~getActivePlayer(), squareFromIndex(kingSquareIndex));
+  return isSquareUnderAttack(~getActivePlayer(), makeSquare(kingSquareIndex));
 }
 // -------------------------------------------------------------------------------------------------
 bool Board::canShortCastle(Color color) const
@@ -313,9 +331,9 @@ bool Board::canShortCastle(Color color) const
   if (rookIndex == -1 || rookIndex < kingIndex) return false;
 
   // Or if one of the squares the king will move to is under attack
-  return !isSquareUnderAttack(enemyColor, squareFromIndex(kingIndex++)) &&
-         !isSquareUnderAttack(enemyColor, squareFromIndex(kingIndex++)) &&
-         !isSquareUnderAttack(enemyColor, squareFromIndex(kingIndex++));
+  return !isSquareUnderAttack(enemyColor, makeSquare(kingIndex++)) &&
+         !isSquareUnderAttack(enemyColor, makeSquare(kingIndex++)) &&
+         !isSquareUnderAttack(enemyColor, makeSquare(kingIndex++));
 }
 // -------------------------------------------------------------------------------------------------
 bool Board::canLongCastle(Color color) const
@@ -339,9 +357,9 @@ bool Board::canLongCastle(Color color) const
   if (rookIndex == -1 || rookIndex > kingIndex) return false;
 
   // Or if one of the squares the king will move to is under attack
-  return !isSquareUnderAttack(enemyColor, squareFromIndex(kingIndex--)) &&
-         !isSquareUnderAttack(enemyColor, squareFromIndex(kingIndex--)) &&
-         !isSquareUnderAttack(enemyColor, squareFromIndex(kingIndex--));
+  return !isSquareUnderAttack(enemyColor, makeSquare(kingIndex--)) &&
+         !isSquareUnderAttack(enemyColor, makeSquare(kingIndex--)) &&
+         !isSquareUnderAttack(enemyColor, makeSquare(kingIndex--));
 }
 // -------------------------------------------------------------------------------------------------
 CastleSide Board::getCastlingRights(Color color) const { return mCastleRights[color]; }
@@ -390,13 +408,14 @@ Bitboard Board::getKingBlockers(Color them) const
   auto       blockers = Bitboard{};
   auto const us       = ~them;
 
-  auto       ksIndex         = bitscan_forward(getPieces(them, Piece::King));
+  auto ksq = getKingSquare(them);
+
+  CG_ASSERT(ksq != Square::None);
+
   auto const rooksOrQueens   = getPieces(us, Piece::Queen) | getPieces(us, Piece::Rook);
-  auto const bishopsOrQueens = getPieces(us, Piece::Queen) | getPieces(us, Piece::Rook);
-  auto const rqAttacks =
-      attacks::getSlidingAttacks(Piece::Rook, squareFromIndex(ksIndex), 0ULL) & rooksOrQueens;
-  auto const bqAttacks =
-      attacks::getSlidingAttacks(Piece::Bishop, squareFromIndex(ksIndex), 0ULL) & bishopsOrQueens;
+  auto const bishopsOrQueens = getPieces(us, Piece::Queen) | getPieces(us, Piece::Bishop);
+  auto const rqAttacks       = attacks::getSlidingAttacks(Piece::Rook, ksq, 0ULL) & rooksOrQueens;
+  auto const bqAttacks = attacks::getSlidingAttacks(Piece::Bishop, ksq, 0ULL) & bishopsOrQueens;
 
   // Find all sliders aiming towards the king position
   auto sliders = getAllPieces(us) & (rqAttacks | bqAttacks);
@@ -406,7 +425,7 @@ Bitboard Board::getKingBlockers(Color them) const
 
   while (sliders) {
     auto const sniperSq = pop_lsb(sliders);
-    auto const b = BBGetBetween(squareFromIndex(ksIndex), squareFromIndex(sniperSq)) & occupancy;
+    auto const b        = BBGetBetween(ksq, makeSquare(sniperSq)) & occupancy;
 
     if (b && !more_than_one(b)) {
       blockers |= b;
@@ -415,36 +434,28 @@ Bitboard Board::getKingBlockers(Color them) const
   return blockers;
 }
 // -------------------------------------------------------------------------------------------------
-bool Board::isSquareUnderAttack(Color color, Square square) const
+bool Board::isSquareUnderAttack(Color enemy, Square square) const
 {
-  //
-  // To check if a square is under attack we check if a piece on this sqaure can attack the same
-  // enemy piece If that is true, then the enemy piece is also attacking this square
-  //
-  if (attacks::getNonSlidingAttacks(Piece::Pawn, square, ~color) & getPieces(color, Piece::Pawn))
-    return true;
-  if (attacks::getNonSlidingAttacks(Piece::Knight, square, Color::White) &
-      getPieces(color, Piece::Knight))
-    return true;
-  if (attacks::getNonSlidingAttacks(Piece::King, square, Color::White) & getPieces(color, Piece::King))
-    return true;
+  auto const us = ~enemy;
 
-  auto const bishopsQueens = getPieces(color, Piece::Bishop) | getPieces(color, Piece::Queen);
-  if (attacks::getSlidingAttacks(Piece::Bishop, square, getOccupied()) & bishopsQueens) {
-    return true;
-  }
+  auto const pawns = getPossibleMoves(Piece::Pawn, us, square) & getPieces(enemy, Piece::Pawn);
+  if (pawns) return true;
+  auto const knights = getPossibleMoves(Piece::Knight, us, square) & getPieces(enemy, Piece::Knight);
+  if (knights) return true;
+  auto const bishops = getPossibleMoves(Piece::Bishop, us, square) & getPieces(enemy, Piece::Bishop);
+  if (bishops) return true;
+  auto const rooks = getPossibleMoves(Piece::Rook, us, square) & getPieces(enemy, Piece::Rook);
+  if (rooks) return true;
+  auto const queens = getPossibleMoves(Piece::Queen, us, square) & getPieces(enemy, Piece::Queen);
+  if (queens) return true;
+  auto const king = getPossibleMoves(Piece::King, us, square) & getPieces(enemy, Piece::King);
 
-  auto const rooksQueens = getPieces(color, Piece::Rook) | getPieces(color, Piece::Queen);
-  if (attacks::getSlidingAttacks(Piece::Rook, square, getOccupied()) & rooksQueens) {
-    return true;
-  }
-
-  return false;
+  return king != 0;
 }
 // -------------------------------------------------------------------------------------------------
 Piece Board::getPieceOn(Square sq) const
 {
-  auto square = 1ULL << indexFromSquare(sq);
+  auto square = 1ULL << makeIndex(sq);
   for (auto color = 0; color < 2; ++color) {
     for (auto pt = 0; pt < 6; ++pt) {
       if (mPieces[color][pt] & square) return Piece(pt);
@@ -478,7 +489,7 @@ Bitboard Board::getCheckers() const
 // -------------------------------------------------------------------------------------------------
 Square Board::getKingSquare(Color color) const
 {
-  return squareFromIndex(bitscan_forward(getPieces(color, Piece::King)));
+  return makeSquare(bitscan_forward(getPieces(color, Piece::King)));
 }
 // -------------------------------------------------------------------------------------------------
 Square Board::getCastlingRook(Color color, CastleSide side) const
@@ -490,65 +501,45 @@ Square Board::getCastlingRook(Color color, CastleSide side) const
     return color == Color::White ? Square::A1 : Square::A8;
 }
 // -------------------------------------------------------------------------------------------------
-Square Board::getEnPassantSquare() const { return squareFromIndex(bitscan_forward(mEnPassant)); }
+Square Board::getEnPassantSquare() const { return makeSquare(bitscan_forward(mEnPassant)); }
 // -------------------------------------------------------------------------------------------------
 bool Board::isMoveLegal(Move const& move) const
 {
-  auto const us   = getActivePlayer();
-  auto const from = move.fromSquare();
-  auto const to   = move.toSquare();
-  auto const ksq  = getKingSquare(us);
-
-  // En passant captures are a tricky special case. Because they are rather
-  // uncommon, we do it simply by testing whether the king is attacked after
-  // the move is made.
-  if (move.isEnPassant()) {
-    auto const capsq    = to - (us == Color::White ? Direction::North : Direction::South);
-    auto const occupied = (getOccupied() ^ from ^ capsq) | to;
-
-    CG_ASSERT(to == getEnPassantSquare());
-    CG_ASSERT((getPieces(~us, Piece::Pawn) & capsq) != 0);
-    CG_ASSERT(getPieceOn(to) == Piece::None);
-
-    return !(attacks::getSlidingAttacks(Piece::Rook, ksq, occupied) &
-             (getPieces(~us, Piece::Queen) | getPieces(~us, Piece::Rook))) &&
-           !(attacks::getSlidingAttacks(Piece::Bishop, ksq, occupied) &
-             (getPieces(~us, Piece::Queen) | getPieces(~us, Piece::Bishop)));
+  for (auto&& m : getLegalMoves()) {
+    if (m.getType() == move.getType() && m.fromSquare() == move.fromSquare() &&
+        m.toSquare() == move.toSquare() && (!m.isPromotion() || m.promotedTo() == move.promotedTo()))
+      return true;
+  }
+  return false;
+}
+// -------------------------------------------------------------------------------------------------
+std::vector<Move> const& Board::getLegalMoves() const
+{
+  if (mBoardChanged) {
+    auto lock = std::unique_lock{mMovesMutex};
+    if (mBoardChanged) {
+      mLegalMoves   = movegen::generateMoves<movegen::MoveType::Legal>(*this);
+      mBoardChanged = false;
+    }
   }
 
-  // If the moving piece is a king, check whether the destination square is
-  // attacked by the opponent.
-  if (ksq == from) {
-    auto const pawns   = getPossibleMoves(Piece::Pawn, us, to) & getPieces(~us, Piece::Pawn);
-    auto const knights = getPossibleMoves(Piece::Knight, us, to) & getPieces(~us, Piece::Knight);
-    auto const bishops = getPossibleMoves(Piece::Bishop, us, to) & getPieces(~us, Piece::Bishop);
-    auto const rooks   = getPossibleMoves(Piece::Rook, us, to) & getPieces(~us, Piece::Rook);
-    auto const queens  = getPossibleMoves(Piece::Queen, us, to) & getPieces(~us, Piece::Queen);
-    auto const king    = getPossibleMoves(Piece::King, us, to) & getPieces(~us, Piece::King);
-
-    return !(pawns | knights | bishops | rooks | queens | king);
-  }
-
-  // A non-king move is legal if and only if it is not pinned or it
-  // is moving along the ray towards or away from the king.
-  auto b = !(getKingBlockers(us) & from) || (attacks::getLineBetween(from, to) & ksq);
-
-  return b;
+  return mLegalMoves;
 }
 // -------------------------------------------------------------------------------------------------
 void Board::makeMove(Move move)
 {
-  auto const us   = getActivePlayer();
-  auto const them = ~us;
-  auto const from = move.fromSquare();
-  auto const to   = move.toSquare();
+  auto const us     = getActivePlayer();
+  auto const behind = us == Color::White ? Direction::South : Direction::North;
+  auto const them   = ~us;
+  auto const from   = move.fromSquare();
+  auto const to     = move.toSquare();
 
   if (!(getAllPieces(us) & from)) {
     CG_ASSERT(false);
     return;
   }
 
-  if (getPieceOn(to) != Piece::None && !(getAllPieces(them) & to)) {
+  if (!move.isCastling() && (getPieceOn(to) != Piece::None && !(getAllPieces(them) & to))) {
     CG_ASSERT(false);
     return;
   }
@@ -584,7 +575,10 @@ void Board::makeMove(Move move)
 
     if (captured != Piece::None) {
       mHalfMoves = 0;  // Reset fifty-move counter on captures
-      removePiece(captured, them, to);
+      if (move.isEnPassant())
+        removePiece(captured, them, to + behind);
+      else
+        removePiece(captured, them, to);
     }
 
     movePiece(getPieceOn(from), us, from, to);
@@ -602,19 +596,21 @@ void Board::makeMove(Move move)
 // -------------------------------------------------------------------------------------------------
 void Board::addPiece(Piece type, Color color, Square square)
 {
+  mBoardChanged = true;
   // clang-format off
-  mPieces[color][type] |= 1ULL << indexFromSquare(square); 
-  mAllPieces[color]    |= 1ULL << indexFromSquare(square);
-  mOccupied            |= 1ULL << indexFromSquare(square);
+  mPieces[color][type] |= 1ULL << makeIndex(square); 
+  mAllPieces[color]    |= 1ULL << makeIndex(square);
+  mOccupied            |= 1ULL << makeIndex(square);
   // clang-format on
 }
 // -------------------------------------------------------------------------------------------------
 void Board::removePiece(Piece type, Color color, Square square)
 {
+  mBoardChanged = true;
   // clang-format off
-  mPieces[color][type] &= ~(1ULL << indexFromSquare(square));
-  mAllPieces[color]    &= ~(1ULL << indexFromSquare(square));
-  mOccupied            &= ~(1ULL << indexFromSquare(square));
+  mPieces[color][type] &= ~(1ULL << makeIndex(square));
+  mAllPieces[color]    &= ~(1ULL << makeIndex(square));
+  mOccupied            &= ~(1ULL << makeIndex(square));
   // clang-format on
 }
 // -------------------------------------------------------------------------------------------------
@@ -635,10 +631,28 @@ void Board::movePiece(Piece type, Color color, Square from, Square to)
         mCastleRights[color] = mCastleRights[color] & ~CastleSide::King;
     }
   } else if (type == Piece::Pawn) {
-    auto const indexFrom = indexFromSquare(from);
-    auto const indexto   = indexFromSquare(to);
-    if (std::abs(indexFrom - indexto) == 16) {
-      mEnPassant = 1ULL << (indexto + (color == Color::White ? -8 : 8));
+    auto const indexFrom = makeIndex(from);
+    auto const indexTo   = makeIndex(to);
+
+    // If it's a double move, see if there is a pawn ready to take en passant
+    // if so, record this square
+    if (std::abs(indexFrom - indexTo) == 16) {
+      auto const pawns = getPieces(~color, Piece::Pawn);
+      auto const toSq  = makeSquare(indexTo);
+      auto const epSq  = (indexTo + (color == Color::White ? -8 : 8));
+      if (getFile(toSq) == File::FileA) {
+        if (pawns & (toSq + Direction::East)) {
+          mEnPassant = 1ULL << epSq;
+        }
+      } else if (getFile(toSq) == File::FileH) {
+        if (pawns & (toSq + Direction::West)) {
+          mEnPassant = 1ULL << epSq;
+        }
+      } else {
+        if (pawns & (toSq + Direction::West) || pawns & (toSq + Direction::East)) {
+          mEnPassant = 1ULL << epSq;
+        }
+      }
     }
     // Reset fifty-rule clock on pawn moves
     mHalfMoves = 0;

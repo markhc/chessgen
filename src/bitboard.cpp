@@ -16,8 +16,8 @@ std::uint64_t SquareBB[64] = {
 Bitboard BBGetBetween(Square s1, Square s2)
 {
   return attacks::getLineBetween(s1, s2) &
-         ((Bitboards::AllSquares << (to_int(s1) + (to_int(s1) < to_int(s2)))) ^
-          (Bitboards::AllSquares << (to_int(s2) + !(to_int(s1) < to_int(s2)))));
+         ((Bitboards::AllSquares << (makeIndex(s1) + (makeIndex(s1) < makeIndex(s2)))) ^
+          (Bitboards::AllSquares << (makeIndex(s2) + !(makeIndex(s1) < makeIndex(s2)))));
 }
 void BBPrettyPrint(std::ostream& os, Bitboard bb)
 {

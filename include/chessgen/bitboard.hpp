@@ -61,11 +61,11 @@ constexpr Bitboard BBShift(Bitboard bb, Direction d)
   }
 }
 
-inline Bitboard  operator&(Bitboard b, Square s) { return b & SquareBB[indexFromSquare(s)]; }
-inline Bitboard  operator|(Bitboard b, Square s) { return b | SquareBB[indexFromSquare(s)]; }
-inline Bitboard  operator^(Bitboard b, Square s) { return b ^ SquareBB[indexFromSquare(s)]; }
-inline Bitboard& operator|=(Bitboard& b, Square s) { return b |= SquareBB[indexFromSquare(s)]; }
-inline Bitboard& operator^=(Bitboard& b, Square s) { return b ^= SquareBB[indexFromSquare(s)]; }
+inline Bitboard  operator&(Bitboard b, Square s) { return b & SquareBB[makeIndex(s)]; }
+inline Bitboard  operator|(Bitboard b, Square s) { return b | SquareBB[makeIndex(s)]; }
+inline Bitboard  operator^(Bitboard b, Square s) { return b ^ SquareBB[makeIndex(s)]; }
+inline Bitboard& operator|=(Bitboard& b, Square s) { return b |= SquareBB[makeIndex(s)]; }
+inline Bitboard& operator^=(Bitboard& b, Square s) { return b ^= SquareBB[makeIndex(s)]; }
 
 Bitboard BBGetBetween(Square s1, Square s2);
 void     BBPrettyPrint(std::ostream& os, Bitboard bb);

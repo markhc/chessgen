@@ -24,11 +24,11 @@ static constexpr Bitboard moveEast(Bitboard b, int n)
 class Rays
 {
 public:
-  auto&       operator[](Direction d) { return mRays[to_int(d)]; }
-  auto const& operator[](Direction d) const { return mRays[to_int(d)]; }
+  auto&       operator[](Direction d) { return mRays[makeIndex(d)]; }
+  auto const& operator[](Direction d) const { return mRays[makeIndex(d)]; }
 
 private:
-  Bitboard mRays[to_int(Direction::Count)][64];
+  Bitboard mRays[makeIndex(Direction::Count)][64];
 };
 
 /**
@@ -39,8 +39,8 @@ static Rays _rays;
 void precomputeTables()
 {
   for (auto sq = 0; sq < 64; ++sq) {
-    auto const file = static_cast<int>(getFile(squareFromIndex(sq)));
-    auto const rank = static_cast<int>(getRank(squareFromIndex(sq)));
+    auto const file = static_cast<int>(getFile(makeSquare(sq)));
+    auto const rank = static_cast<int>(getRank(makeSquare(sq)));
     // clang-format off
     _rays[Direction::North][sq]     = 0x0101010101010100ULL << sq;
     _rays[Direction::South][sq]     = 0x0080808080808080ULL >> (63 - sq);

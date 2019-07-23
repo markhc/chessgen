@@ -77,16 +77,21 @@ enum class Square : short {
   A7, B7, C7, D7, E7, F7, G7, H7,
   A8, B8, C8, D8, E8, F8, G8, H8,
   Count,
+  None,
   // clang-format on
 };
-constexpr Square squareFromIndex(int index) { return Square(index); }
-constexpr int    indexFromSquare(Square square) { return int(square); }
+constexpr Square makeSquare(int index)
+{
+  if (index == -1) return Square::None;
+  return Square(index);
+}
 constexpr Square makeSquare(File f, Rank r)
 {
   CG_ASSERT(f >= File::FileA && f <= File::FileH);
   CG_ASSERT(r >= Rank::Rank1 && r <= Rank::Rank8);
   return Square((static_cast<int>(r) << 3) + static_cast<int>(f));
 }
+constexpr int         makeIndex(Square square) { return int(square); }
 constexpr inline File getFile(Square s)
 {
   CG_ASSERT(s >= Square::A1 && s <= Square::H8);
@@ -167,9 +172,9 @@ constexpr Square operator-(Square s, Direction d)
 struct PieceEnum {
   enum Piece_ : short {
     Pawn,
-    Rook,
-    Knight,
     Bishop,
+    Knight,
+    Rook,
     Queen,
     King,
     Count,
@@ -238,7 +243,7 @@ inline std::string to_string(Piece p)
 }
 
 template <class E>
-constexpr int to_int(E e)
+constexpr int makeIndex(E e)
 {
   return static_cast<int>(e);
 }

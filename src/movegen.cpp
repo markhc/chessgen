@@ -13,174 +13,69 @@ namespace movegen
 {
 template <Color Us, MoveType Type>
 void generateAll(Board const& board, Bitboard target, std::vector<Move>& moves);
+// -------------------------------------------------------------------------------------------------
 template <Color Us>
 void generateDiscoveredChecks(Board const& board, std::vector<Move>& moves);
+// -------------------------------------------------------------------------------------------------
 template <Color Us, Piece PieceType, MoveType Type>
 void generatePieceMoves(Board const& board, Bitboard target, std::vector<Move>& moves);
+// -------------------------------------------------------------------------------------------------
 template <Color Us, MoveType Type>
 void generatePawnMoves(Board const& board, Bitboard target, std::vector<Move>& moves);
+// -------------------------------------------------------------------------------------------------
+bool legalityCheck(Board const& board, Move const& move);
+// -------------------------------------------------------------------------------------------------
 
-/**
- * General implementation. Handles Captures, NonEvasions and Quiet move generation.
- * Other move types are handled by their respective specializations below
- */
-template <MoveType Type>
-auto generateMoves(Board const& board) -> std::vector<Move>
+// -------------------------------------------------------------------------------------------------
+bool legalityCheck(Board const& board, Move const& move)
 {
-  auto       moves = std::vector<Move>{};
-  auto const us    = board.getActivePlayer();
-  auto const them  = ~us;
+  auto const us   = board.getActivePlayer();
+  auto const from = move.fromSquare();
+  auto const to   = move.toSquare();
+  auto const ksq  = board.getKingSquare(us);
 
-  auto const target = [&] {
-    // clang-format off
-    if (Type == MoveType::Captures)    return  board.getAllPieces(them);
-    if (Type == MoveType::Quiets)      return  board.getUnoccupied();
-    if (Type == MoveType::NonEvasions) return ~board.getAllPieces(us);
-    // clang-format on
-    return Bitboard{0};
-  }();
+  CG_ASSERT(ksq != Square::None);
 
-  if (us == Color::White)
-    generateAll<Color::White, Type>(board, target, moves);
-  else
-    generateAll<Color::Black, Type>(board, target, moves);
+  // En passant captures are a tricky special case. Because they are rather
+  // uncommon, we do it simply by testing whether the king is attacked after
+  // the move is made.
+  if (move.isEnPassant()) {
+    auto const capsq    = to - (us == Color::White ? Direction::North : Direction::South);
+    auto const occupied = (board.getOccupied() ^ from ^ capsq) | to;
 
-  return moves;
-}
+    CG_ASSERT(to == board.getEnPassantSquare());
+    CG_ASSERT((board.getPieces(~us, Piece::Pawn) & capsq) != 0);
+    CG_ASSERT(board.getPieceOn(to) == Piece::None);
 
-template std::vector<Move> generateMoves<MoveType::Captures>(Board const& board);
-template std::vector<Move> generateMoves<MoveType::Quiets>(Board const& board);
-template std::vector<Move> generateMoves<MoveType::NonEvasions>(Board const& board);
-
-template <>
-auto generateMoves<MoveType::QuietChecks>(Board const& board) -> std::vector<Move>
-{
-  auto       moves = std::vector<Move>{};
-  auto const us    = board.getActivePlayer();
-
-  if (us == Color::White) {
-    generateDiscoveredChecks<Color::White>(board, moves);
-    generateAll<Color::White, MoveType::QuietChecks>(board, board.getUnoccupied(), moves);
-  } else {
-    generateDiscoveredChecks<Color::Black>(board, moves);
-    generateAll<Color::Black, MoveType::QuietChecks>(board, board.getUnoccupied(), moves);
+    return !(attacks::getSlidingAttacks(Piece::Rook, ksq, occupied) &
+             (board.getPieces(~us, Piece::Queen) | board.getPieces(~us, Piece::Rook))) &&
+           !(attacks::getSlidingAttacks(Piece::Bishop, ksq, occupied) &
+             (board.getPieces(~us, Piece::Queen) | board.getPieces(~us, Piece::Bishop)));
   }
 
-  return moves;
-}
-
-template <>
-auto generateMoves<MoveType::Evasions>(Board const& board) -> std::vector<Move>
-{
-  CG_ASSERT(board.isInCheck());
-  CG_ASSERT(board.getCheckers());
-
-  auto       moves         = std::vector<Move>{};
-  auto const us            = board.getActivePlayer();
-  auto       ksq           = board.getKingSquare(us);
-  auto       sliderAttacks = Bitboard{};
-  auto       sliders       = board.getCheckers() &  //
-                 ~board.getPieces(Piece::Pawn) &    //
-                 ~board.getPieces(Piece::Knight);   //
-
-  // Find all the squares attacked by slider checkers. We will remove them from
-  // the king evasions in order to skip known illegal moves, which avoids any
-  // useless legality checks later on.
-  while (sliders) {
-    auto const checksq = squareFromIndex(pop_lsb(sliders));
-    sliderAttacks |= attacks::getLineBetween(checksq, ksq) ^ checksq;
+  // If the moving piece is a king, check whether the destination square is
+  // attacked by the opponent.
+  if (ksq == from) {
+    return !board.isSquareUnderAttack(~us, to);
   }
 
-  // Generate evasions for king, capture and non capture moves
-  auto b = board.getPossibleMoves(Piece::King, us, ksq) & ~board.getAllPieces(us) & ~sliderAttacks;
-  while (b) {
-    moves.emplace_back(Move::makeMove(ksq, squareFromIndex(pop_lsb(b))));
-  }
-
-  auto checkers = board.getCheckers();
-
-  // Double check?
-  if (more_than_one(checkers)) return moves;
-
-  // Generate blocking evasions or captures of the checking piece
-  auto const checksq = squareFromIndex(lsb(checkers));
-  auto const target  = BBGetBetween(checksq, ksq) | checksq;
-
-  if (us == Color::White)
-    generateAll<Color::White, MoveType::Evasions>(board, target, moves);
-  else
-    generateAll<Color::Black, MoveType::Evasions>(board, target, moves);
-
-  return moves;
+  // A non-king move is legal if and only if it is not pinned or it
+  // is moving along the ray towards or away from the king.
+  return !(board.getKingBlockers(us) & from) || (attacks::getLineBetween(from, to) & ksq);
 }
-template <>
-auto generateMoves<MoveType::Legal>(Board const& board) -> std::vector<Move>
-{
-  auto const us           = board.getActivePlayer();
-  auto const pinnedPieces = board.getKingBlockers(us) & board.getAllPieces(us);
-  auto const ksq          = board.getKingSquare(us);
-
-  auto moves = std::vector<Move>{};
-  if (board.isInCheck())
-    moves = generateMoves<MoveType::Evasions>(board);
-  else
-    moves = generateMoves<MoveType::NonEvasions>(board);
-
-  auto newEnd = std::remove_if(moves.begin(), moves.end(), [&](Move const& move) {
-    // There are 2 situations in which a move can be invalid:
-    // - If there are pinned pieces, it cannot be moved in a way that places the king in check
-    // - If we are moving the king, it must not be placed in check
-    //
-    // If we could detect possible en passant captures that leave the king in check as a pinned
-    // piece that would be nice, but since we cannot, we also check for that specific scenario here
-    //
-    if (pinnedPieces != 0 || move.fromSquare() == ksq || move.isEnPassant())
-      return !board.isMoveLegal(move);
-
-    return false;
-  });
-
-  moves.erase(newEnd, moves.end());
-
-  return moves;
-}
-
-template <Color Us, MoveType Type>
-void generateAll(Board const& board, Bitboard target, std::vector<Move>& moves)
-{
-  generatePieceMoves<Us, Piece::Pawn, Type>(board, target, moves);
-  generatePieceMoves<Us, Piece::Knight, Type>(board, target, moves);
-  generatePieceMoves<Us, Piece::Bishop, Type>(board, target, moves);
-  generatePieceMoves<Us, Piece::Rook, Type>(board, target, moves);
-  generatePieceMoves<Us, Piece::Queen, Type>(board, target, moves);
-
-  if constexpr (Type != MoveType::QuietChecks && Type != MoveType::Evasions) {
-    auto ksq = board.getKingSquare(Us);
-    auto b   = board.getPossibleMoves(Piece::King, Us, ksq) & target;
-    while (b) {
-      moves.emplace_back(Move::makeMove(ksq, squareFromIndex(pop_lsb(b))));
-    }
-
-    if constexpr (Type != MoveType::Captures) {
-      if (board.canLongCastle(Us))
-        moves.emplace_back(Move::makeCastling(ksq, board.getCastlingRook(Us, CastleSide::Queen)));
-
-      if (board.canShortCastle(Us))
-        moves.emplace_back(Move::makeCastling(ksq, board.getCastlingRook(Us, CastleSide::King)));
-    }
-  }
-}
-
+// -------------------------------------------------------------------------------------------------
 template <Color Us>
 void generateDiscoveredChecks(Board const& board, std::vector<Move>& moves)
 {
   constexpr auto Them = ~Us;
 
+  CG_ASSERT(board.getKingSquare(Them) != Square::None);
+
   // Get all of our pieces that are blocking the attacks to the enemy king
   auto discoveredChecks = board.getKingBlockers(Them) & board.getAllPieces(Us);
 
   while (discoveredChecks) {
-    auto const fromSquare = squareFromIndex(pop_lsb(discoveredChecks));
+    auto const fromSquare = makeSquare(pop_lsb(discoveredChecks));
     auto const piece      = board.getPieceOn(fromSquare);
 
     // Handled in the special generatePawnMoves function
@@ -193,19 +88,22 @@ void generateDiscoveredChecks(Board const& board, std::vector<Move>& moves)
     // Other pieces (except pawns) will always move somewhere they won't block
     // so there is no need to check for them
     if (piece == Piece::King) {
-      auto const kingSquare = bitscan_forward(board.getPieces(Them, Piece::King));
+      auto const kingSquare = board.getKingSquare(Them);
 
-      b &= ~attacks::getSlidingAttacks(Piece::Queen, squareFromIndex(kingSquare), Bitboard{});
+      b &= ~attacks::getSlidingAttacks(Piece::Queen, kingSquare, Bitboard{});
     }
 
     while (b) {
-      moves.emplace_back(Move::makeMove(fromSquare, squareFromIndex(pop_lsb(b))));
+      moves.emplace_back(Move::makeMove(fromSquare, makeSquare(pop_lsb(b))));
     }
   }
 }
+// -------------------------------------------------------------------------------------------------
 template <Color Us, Piece PieceType, MoveType Type>
 void generatePieceMoves(Board const& board, Bitboard target, std::vector<Move>& moves)
 {
+  CG_ASSERT(PieceType != Piece::King);
+
   if constexpr (PieceType == Piece::Pawn) {
     return generatePawnMoves<Us, Type>(board, target, moves);
   }
@@ -213,7 +111,7 @@ void generatePieceMoves(Board const& board, Bitboard target, std::vector<Move>& 
   auto squares = board.getPieces(Us, PieceType);
 
   while (squares) {
-    auto const from            = squareFromIndex(pop_lsb(squares));
+    auto const from            = makeSquare(pop_lsb(squares));
     auto       possibleSquares = board.getPossibleMoves(PieceType, Us, from) & target;
 
     if constexpr (Type == MoveType::QuietChecks) {
@@ -221,10 +119,11 @@ void generatePieceMoves(Board const& board, Bitboard target, std::vector<Move>& 
     }
 
     while (possibleSquares) {
-      moves.emplace_back(Move::makeMove(from, squareFromIndex(pop_lsb(possibleSquares))));
+      moves.emplace_back(Move::makeMove(from, makeSquare(pop_lsb(possibleSquares))));
     }
   }
 }
+// -------------------------------------------------------------------------------------------------
 template <Color Us, MoveType Type, Direction D>
 void makePromotions(Board const& board, Square to, Square ksq, std::vector<Move>& moves)
 {
@@ -240,6 +139,7 @@ void makePromotions(Board const& board, Square to, Square ksq, std::vector<Move>
     moves.emplace_back(Move::makePromotion(to - D, to, Piece::Knight));
   }
 }
+// -------------------------------------------------------------------------------------------------
 template <Color Us, MoveType Type>
 void generatePawnMoves(Board const& board, Bitboard target, std::vector<Move>& moves)
 {
@@ -289,7 +189,7 @@ void generatePawnMoves(Board const& board, Bitboard target, std::vector<Move>& m
       // promotion has been already generated amongst the captures.
       auto const dcCandidateQuiets = board.getKingBlockers(Them) & pawnsNotOn7;
       if (dcCandidateQuiets) {
-        auto const file = to_int(getFile(ksq));
+        auto const file = makeIndex(getFile(ksq));
         auto const dc1 = BBShift(dcCandidateQuiets, Up) & emptySquares & ~(Bitboards::FileA << file);
         auto const dc2 = BBShift(dc1 & Rank3BB, Up) & emptySquares;
 
@@ -299,13 +199,13 @@ void generatePawnMoves(Board const& board, Bitboard target, std::vector<Move>& m
     }
 
     while (singleMoves) {
-      auto const to   = squareFromIndex(pop_lsb(singleMoves));
+      auto const to   = makeSquare(pop_lsb(singleMoves));
       auto const from = to - Up;
       moves.emplace_back(Move::makeMove(from, to));
     }
 
     while (doubleMoves) {
-      auto const to   = squareFromIndex(pop_lsb(doubleMoves));
+      auto const to   = makeSquare(pop_lsb(doubleMoves));
       auto const from = to - Up - Up;
       moves.emplace_back(Move::makeMove(from, to));
     }
@@ -327,17 +227,17 @@ void generatePawnMoves(Board const& board, Bitboard target, std::vector<Move>& m
     Square ksq = board.getKingSquare(Them);
 
     while (b1) {
-      auto const sq = squareFromIndex(pop_lsb(b1));
+      auto const sq = makeSquare(pop_lsb(b1));
       makePromotions<Us, Type, UpRight>(board, sq, ksq, moves);
     }
 
     while (b2) {
-      auto const sq = squareFromIndex(pop_lsb(b2));
+      auto const sq = makeSquare(pop_lsb(b2));
       makePromotions<Us, Type, UpLeft>(board, sq, ksq, moves);
     }
 
     while (b3) {
-      auto const sq = squareFromIndex(pop_lsb(b3));
+      auto const sq = makeSquare(pop_lsb(b3));
       makePromotions<Us, Type, Up>(board, sq, ksq, moves);
     }
   }
@@ -348,12 +248,12 @@ void generatePawnMoves(Board const& board, Bitboard target, std::vector<Move>& m
     Bitboard b2 = BBShift(pawnsNotOn7, UpLeft) & enemies;
 
     while (b1) {
-      auto const to = squareFromIndex(pop_lsb(b1));
+      auto const to = makeSquare(pop_lsb(b1));
       moves.emplace_back(Move::makeMove(to - UpRight, to));
     }
 
     while (b2) {
-      auto const to = squareFromIndex(pop_lsb(b2));
+      auto const to = makeSquare(pop_lsb(b2));
       moves.emplace_back(Move::makeMove(to - UpLeft, to));
     }
 
@@ -371,11 +271,178 @@ void generatePawnMoves(Board const& board, Bitboard target, std::vector<Move>& m
 
       b1 = pawnsNotOn7 & board.getPossibleMoves(Piece::Pawn, Them, ep);
 
+      // En passant squares are not recorded if there is no pawn in place to capture the passant
+      // pawn so b1 should be always != 0
+      CG_ASSERT(b1);
+
       while (b1) {
-        moves.emplace_back(Move::makeEnPassant(squareFromIndex(pop_lsb(b1)), ep));
+        moves.emplace_back(Move::makeEnPassant(makeSquare(pop_lsb(b1)), ep));
       }
     }
   }
 }
+
+/**
+ * General implementation. Handles Captures, NonEvasions and Quiet move generation.
+ * Other move types are handled by their respective specializations below
+ */
+template <MoveType Type>
+auto generateMoves(Board const& board) -> std::vector<Move>
+{
+  CG_ASSERT(Type == MoveType::Captures || Type == MoveType::Quiets || Type == MoveType::NonEvasions);
+  CG_ASSERT(!board.isInCheck());
+  CG_ASSERT(!board.getCheckers());
+
+  auto       moves = std::vector<Move>{};
+  auto const us    = board.getActivePlayer();
+  auto const them  = ~us;
+
+  auto const target = [&] {
+    // clang-format off
+    if (Type == MoveType::Captures)    return  board.getAllPieces(them);
+    if (Type == MoveType::Quiets)      return  board.getUnoccupied();
+    if (Type == MoveType::NonEvasions) return ~board.getAllPieces(us);
+    // clang-format on
+    return Bitboard{0};
+  }();
+
+  if (us == Color::White)
+    generateAll<Color::White, Type>(board, target, moves);
+  else
+    generateAll<Color::Black, Type>(board, target, moves);
+
+  return moves;
+}
+template std::vector<Move> generateMoves<MoveType::Captures>(Board const& board);
+template std::vector<Move> generateMoves<MoveType::Quiets>(Board const& board);
+template std::vector<Move> generateMoves<MoveType::NonEvasions>(Board const& board);
+// -------------------------------------------------------------------------------------------------
+template <>
+auto generateMoves<MoveType::QuietChecks>(Board const& board) -> std::vector<Move>
+{
+  auto       moves = std::vector<Move>{};
+  auto const us    = board.getActivePlayer();
+
+  CG_ASSERT(!board.isInCheck());
+  CG_ASSERT(!board.getCheckers());
+
+  if (us == Color::White) {
+    generateDiscoveredChecks<Color::White>(board, moves);
+    generateAll<Color::White, MoveType::QuietChecks>(board, board.getUnoccupied(), moves);
+  } else {
+    generateDiscoveredChecks<Color::Black>(board, moves);
+    generateAll<Color::Black, MoveType::QuietChecks>(board, board.getUnoccupied(), moves);
+  }
+
+  return moves;
+}
+// -------------------------------------------------------------------------------------------------
+template <>
+auto generateMoves<MoveType::Evasions>(Board const& board) -> std::vector<Move>
+{
+  auto const us = board.getActivePlayer();
+
+  CG_ASSERT(board.getKingSquare(us) != Square::None);
+  CG_ASSERT(board.isInCheck());
+  CG_ASSERT(board.getCheckers());
+
+  auto moves         = std::vector<Move>{};
+  auto ksq           = board.getKingSquare(us);
+  auto sliderAttacks = Bitboard{};
+  auto sliders       = board.getCheckers() &       //
+                 ~board.getPieces(Piece::Pawn) &   //
+                 ~board.getPieces(Piece::Knight);  //
+
+  // Find all the squares attacked by slider checkers. We will remove them from
+  // the king evasions in order to skip known illegal moves, which avoids any
+  // useless legality checks later on.
+  while (sliders) {
+    auto const checksq = makeSquare(pop_lsb(sliders));
+    sliderAttacks |= attacks::getLineBetween(checksq, ksq) ^ checksq;
+  }
+
+  // Generate evasions for king, capture and non capture moves
+  auto b = board.getPossibleMoves(Piece::King, us, ksq) & ~board.getAllPieces(us) & ~sliderAttacks;
+  while (b) {
+    moves.emplace_back(Move::makeMove(ksq, makeSquare(pop_lsb(b))));
+  }
+
+  auto checkers = board.getCheckers();
+
+  // Double check?
+  if (more_than_one(checkers)) return moves;
+
+  // Generate blocking evasions or captures of the checking piece
+  auto const checksq = makeSquare(lsb(checkers));
+  auto const target  = BBGetBetween(checksq, ksq) | checksq;
+
+  if (us == Color::White)
+    generateAll<Color::White, MoveType::Evasions>(board, target, moves);
+  else
+    generateAll<Color::Black, MoveType::Evasions>(board, target, moves);
+
+  return moves;
+}
+// -------------------------------------------------------------------------------------------------
+template <>
+auto generateMoves<MoveType::Legal>(Board const& board) -> std::vector<Move>
+{
+  auto const us           = board.getActivePlayer();
+  auto const pinnedPieces = board.getKingBlockers(us) & board.getAllPieces(us);
+  auto const ksq          = board.getKingSquare(us);
+
+  CG_ASSERT(ksq != Square::None);
+
+  auto moves = std::vector<Move>{};
+  if (board.isInCheck())
+    moves = generateMoves<MoveType::Evasions>(board);
+  else
+    moves = generateMoves<MoveType::NonEvasions>(board);
+
+  auto newEnd = std::remove_if(moves.begin(), moves.end(), [&](Move const& move) {
+    // There are 2 situations in which a move can be invalid:
+    // - If there are pinned pieces, it cannot be moved in a way that places the king in check
+    // - If we are moving the king, it must not be placed in check
+    //
+    // If we could detect possible en passant captures that leave the king in check as a pinned
+    // piece that would be nice, but since we cannot, we also check for that specific scenario here
+    //
+    if (pinnedPieces != 0 || move.fromSquare() == ksq || move.isEnPassant())
+      return !legalityCheck(board, move);
+
+    return false;
+  });
+
+  moves.erase(newEnd, moves.end());
+
+  return moves;
+}
+// -------------------------------------------------------------------------------------------------
+template <Color Us, MoveType Type>
+void generateAll(Board const& board, Bitboard target, std::vector<Move>& moves)
+{
+  generatePieceMoves<Us, Piece::Pawn, Type>(board, target, moves);
+  generatePieceMoves<Us, Piece::Knight, Type>(board, target, moves);
+  generatePieceMoves<Us, Piece::Bishop, Type>(board, target, moves);
+  generatePieceMoves<Us, Piece::Rook, Type>(board, target, moves);
+  generatePieceMoves<Us, Piece::Queen, Type>(board, target, moves);
+
+  if constexpr (Type != MoveType::QuietChecks && Type != MoveType::Evasions) {
+    auto ksq = board.getKingSquare(Us);
+    auto b   = board.getPossibleMoves(Piece::King, Us, ksq) & target;
+    while (b) {
+      moves.emplace_back(Move::makeMove(ksq, makeSquare(pop_lsb(b))));
+    }
+
+    if constexpr (Type != MoveType::Captures) {
+      if (board.canLongCastle(Us))
+        moves.emplace_back(Move::makeCastling(ksq, board.getCastlingRook(Us, CastleSide::Queen)));
+
+      if (board.canShortCastle(Us))
+        moves.emplace_back(Move::makeCastling(ksq, board.getCastlingRook(Us, CastleSide::King)));
+    }
+  }
+}
+// -------------------------------------------------------------------------------------------------
 }  // namespace movegen
 }  // namespace chessgen
