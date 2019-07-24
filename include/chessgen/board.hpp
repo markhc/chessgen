@@ -54,7 +54,31 @@ public:
    */
   std::string prettyPrint(bool useUnicodeChars = true) const;
 
-  void makeMove(Move move);
+  /**
+   * @brief Plays a move, changing the current board position
+   *
+   * If @c performLegalityCheck is set to @c false and @c move is an illegal move, the behavior of
+   * this function is undefined (anything can happen)
+   *
+   * @param move                 The move to play
+   * @param performLegalityCheck Whether to check the move for legality
+   *
+   * @returns @c true if the move was played, @c false otherwise
+   */
+  bool makeMove(Move const& move, bool performLegalityCheck = false);
+
+  /**
+   * @brief Plays a move in the Standard Algebraic Notation form
+   *
+   * If @c performLegalityCheck is set to @c false and @c move is an illegal move, the behavior of
+   * this function is undefined (anything can happen)
+   *
+   * @param move                 The move to play
+   * @param performLegalityCheck Whether the move was already checked for legality
+   *
+   * @returns @c true if the move was played, @c false otherwise
+   */
+  bool makeMove(std::string_view move, bool performLegalityCheck = true);
 
   /**
    * @brief Gets the number of halfmoves since the last capture or pawn move
@@ -167,14 +191,69 @@ public:
    */
   Bitboard getKingBlockers(Color color) const;
 
-  Piece    getPieceOn(Square sq) const;
-  Bitboard getCheckSquares(Color color, Piece piece) const;
-  Bitboard getCheckers() const;
-  Square   getKingSquare(Color color) const;
-  Square   getCastlingRook(Color color, CastleSide side) const;
-  Square   getEnPassantSquare() const;
-  bool     isMoveLegal(Move const& move) const;
+  /**
+   * @brief Gets the type of the piece on the given suqare
+   *
+   * @param sq The square
+   *
+   * @returns The piece on that square
+   */
+  Piece getPieceOn(Square sq) const;
 
+  /**
+   * @brief Retrives a bitboard with all the squares where the given piece can check the enemy king
+   *        from considering the current board position
+   *
+   * @param color The piece color
+   * @param piece The piece type
+   *
+   * @returns A bitboard with all the checking squares
+   */
+  Bitboard getCheckSquares(Color color, Piece piece) const;
+
+  /**
+   * @brief Gets a bitboard with all the pieces giving check to the active player's king
+   *
+   * @returns A bitboard with all the checking pieces
+   */
+  Bitboard getCheckers() const;
+
+  /**
+   * @brief Gets the square of the king for the given color
+   *
+   * @param color The king color
+   *
+   * @returns The king square, or @c Square::None if there is no king
+   */
+  Square getKingSquare(Color color) const;
+
+  /**
+   * @brief Gets the square for the rook to be used in caslting.
+   *
+   * This function performs no check to see if there is actually a rook on the returned square
+   *
+   * @param color The castling color
+   * @param side  The castling side
+   *
+   * @returns The square where the rook should be for a castling move
+   */
+  Square getCastlingRookSquare(Color color, CastleSide side) const;
+
+  /**
+   * @brief Gets the En Passant square, if there is one. This is the square behind the en passant pawn
+   *
+   * @returns The EP square or @c Square::None if there is no En Passant pawn
+   */
+  Square getEnPassantSquare() const;
+
+  /**
+   * @brief Checks whether the given move is legal
+   */
+  bool isMoveLegal(Move const& move) const;
+
+  /**
+   * @brief Gets the list of all legal moves for the current board position
+   */
   std::vector<Move> const& getLegalMoves() const;
 
   /**

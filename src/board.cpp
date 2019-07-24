@@ -492,7 +492,7 @@ Square Board::getKingSquare(Color color) const
   return makeSquare(getPieces(color, Piece::King).bsf());
 }
 // -------------------------------------------------------------------------------------------------
-Square Board::getCastlingRook(Color color, CastleSide side) const
+Square Board::getCastlingRookSquare(Color color, CastleSide side) const
 {
   // TODO: Support Chess960
   if (side == CastleSide::King)
@@ -526,8 +526,12 @@ std::vector<Move> const& Board::getLegalMoves() const
   return mLegalMoves;
 }
 // -------------------------------------------------------------------------------------------------
-void Board::makeMove(Move move)
+bool Board::makeMove(Move const& move, bool performLegalityCheck)
 {
+  if (performLegalityCheck && !isMoveLegal(move)) {
+    return false;
+  }
+
   auto const us     = getActivePlayer();
   auto const behind = us == Color::White ? Direction::South : Direction::North;
   auto const them   = ~us;
@@ -536,12 +540,12 @@ void Board::makeMove(Move move)
 
   if (!(getAllPieces(us) & from)) {
     CG_ASSERT(false);
-    return;
+    return false;
   }
 
   if (!move.isCastling() && (getPieceOn(to) != Piece::None && !(getAllPieces(them) & to))) {
     CG_ASSERT(false);
-    return;
+    return false;
   }
 
   mEnPassant.clear();
@@ -592,6 +596,7 @@ void Board::makeMove(Move move)
   if (us == Color::Black) ++mFullMove;
 
   mTurn = ~mTurn;
+  return true;
 }
 // -------------------------------------------------------------------------------------------------
 void Board::addPiece(Piece type, Color color, Square square)
