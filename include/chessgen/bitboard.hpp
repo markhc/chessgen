@@ -64,7 +64,7 @@ public:
   }
   constexpr int popLsb()
   {
-    int lsbIndex = intrin_forward_scan(bits) - 1;
+    int lsbIndex = __builtin_ffsll(bits) - 1;
     bits &= bits - 1;
     return lsbIndex;
   }

@@ -10,7 +10,6 @@
 
 #include "chessgen/attacks.hpp"
 #include "chessgen/helpers.hpp"
-#include "chessgen/intrinsics.hpp"
 #include "chessgen/movegen.hpp"
 #include "chessgen/rays.hpp"
 

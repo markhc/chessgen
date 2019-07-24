@@ -1,6 +1,4 @@
 #include "chessgen/attacks.hpp"
-#include <iostream>
-#include "chessgen/intrinsics.hpp"
 #include "chessgen/rays.hpp"
 
 namespace chessgen

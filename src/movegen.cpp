@@ -1,7 +1,6 @@
 #include "chessgen/movegen.hpp"
 #include "chessgen/attacks.hpp"
 #include "chessgen/board.hpp"
-#include "chessgen/intrinsics.hpp"
 
 #include <algorithm>
 #include <iostream>
