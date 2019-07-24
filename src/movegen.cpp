@@ -401,12 +401,13 @@ auto generateMoves<GenType::Legal>(Board const& board) -> std::vector<Move>
     moves = generateMoves<GenType::NonEvasions>(board);
 
   auto newEnd = std::remove_if(moves.begin(), moves.end(), [&](Move const& move) {
-    // There are 2 situations in which a move can be invalid:
+    // There are 2 situations in which a pseudo-legal move can be illegal:
     // - If there are pinned pieces, it cannot be moved in a way that places the king in check
     // - If we are moving the king, it must not be placed in check
     //
-    // If we could detect possible en passant captures that leave the king in check as a pinned
-    // piece that would be nice, but since we cannot, we also check for that specific scenario here
+    // An extra scenario is also possible when there is an en passant capture. Ideally we would
+    // detect that that capture would place the king and check and set the pawn as pinned
+    // but that is rather tricky, it's easier to just check for legality after the move
     //
     if (pinnedPieces || move.fromSquare() == ksq || move.isEnPassant())
       return !legalityCheck(board, move);
