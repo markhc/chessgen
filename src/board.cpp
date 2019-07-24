@@ -53,40 +53,40 @@ void Board::loadFen(std::string_view fen)
     for (auto&& currChar : str) {
       switch (currChar) {
         case 'p':
-          mPieces[Color::Black][Piece::Pawn] |= (1ULL << boardPos++);
+          mPieces[Color::Black][Piece::Pawn].setBit(boardPos++);
           break;
         case 'r':
-          mPieces[Color::Black][Piece::Rook] |= (1ULL << boardPos++);
+          mPieces[Color::Black][Piece::Rook].setBit(boardPos++);
           break;
         case 'n':
-          mPieces[Color::Black][Piece::Knight] |= (1ULL << boardPos++);
+          mPieces[Color::Black][Piece::Knight].setBit(boardPos++);
           break;
         case 'b':
-          mPieces[Color::Black][Piece::Bishop] |= (1ULL << boardPos++);
+          mPieces[Color::Black][Piece::Bishop].setBit(boardPos++);
           break;
         case 'q':
-          mPieces[Color::Black][Piece::Queen] |= (1ULL << boardPos++);
+          mPieces[Color::Black][Piece::Queen].setBit(boardPos++);
           break;
         case 'k':
-          mPieces[Color::Black][Piece::King] |= (1ULL << boardPos++);
+          mPieces[Color::Black][Piece::King].setBit(boardPos++);
           break;
         case 'P':
-          mPieces[Color::White][Piece::Pawn] |= (1ULL << boardPos++);
+          mPieces[Color::White][Piece::Pawn].setBit(boardPos++);
           break;
         case 'R':
-          mPieces[Color::White][Piece::Rook] |= (1ULL << boardPos++);
+          mPieces[Color::White][Piece::Rook].setBit(boardPos++);
           break;
         case 'N':
-          mPieces[Color::White][Piece::Knight] |= (1ULL << boardPos++);
+          mPieces[Color::White][Piece::Knight].setBit(boardPos++);
           break;
         case 'B':
-          mPieces[Color::White][Piece::Bishop] |= (1ULL << boardPos++);
+          mPieces[Color::White][Piece::Bishop].setBit(boardPos++);
           break;
         case 'Q':
-          mPieces[Color::White][Piece::Queen] |= (1ULL << boardPos++);
+          mPieces[Color::White][Piece::Queen].setBit(boardPos++);
           break;
         case 'K':
-          mPieces[Color::White][Piece::King] |= (1ULL << boardPos++);
+          mPieces[Color::White][Piece::King].setBit(boardPos++);
           break;
         case '/':
           boardPos -= 16;  // Go down one rank
@@ -123,9 +123,10 @@ void Board::loadFen(std::string_view fen)
   };
   auto parseEnPassantSquare = [this](std::string_view str) {
     if (str != "-") {
-      mEnPassant = 1ULL << Move::notationToIndex(str);
+      mEnPassant.setBit(Move::notationToIndex(str));
     }
   };
+
   auto parseHalfMoveNumber = [this](std::string_view str) {
     auto [p, ec] = std::from_chars(str.data(), str.data() + str.size(), mHalfMoves);
     if (ec != std::errc()) {
@@ -152,11 +153,18 @@ std::string Board::getFen() const
 {
   std::string fen;
 
-  auto getPieceOnSquare = [this](std::uint64_t square) {
+  auto getPieceOnSquare = [this](Square square) {
+    auto const pieces = {
+        Piece::King,
+        Piece::Queen,
+        Piece::Rook,
+        Piece::Bishop,
+        Piece::Knight,
+        Piece::Pawn,
+    };
     for (auto color : {Color::White, Color::Black}) {
-      for (auto piece :
-           {Piece::King, Piece::Queen, Piece::Rook, Piece::Bishop, Piece::Knight, Piece::Pawn}) {
-        if (mPieces[color][piece] & square) {
+      for (auto piece : pieces) {
+        if (getPieces(color, piece) & square) {
           return std::make_pair(color, piece);
         }
       }
@@ -168,8 +176,8 @@ std::string Board::getFen() const
 
   for (auto i = 56; i >= 0; i -= 8) {
     for (int boardPos = i; boardPos < i + 8; boardPos++) {
-      auto const square         = 1ULL << boardPos;
-      auto const squareOccupied = (square & mOccupied) != 0;
+      auto const square         = makeSquare(boardPos);
+      auto const squareOccupied = !!(getOccupied() & square);
       if (squareOccupied) {
         auto [color, piece] = getPieceOnSquare(square);
         if (emptyCount > 0) {
@@ -203,7 +211,7 @@ std::string Board::getFen() const
   }
 
   fen += ' ';
-  fen += mEnPassant == 0 ? "-" : Move::indexToNotation(bitscan_forward(mEnPassant));
+  fen += !mEnPassant ? "-" : Move::indexToNotation(mEnPassant.bsf());
   fen += " " + std::to_string(mHalfMoves);
   fen += " " + std::to_string(mFullMove);
 
@@ -286,11 +294,12 @@ bool Board::isInsufficientMaterial() const
   auto const toMove = getActivePlayer();
 
   // Check if only kings are left
-  if (pop_count(getOccupied()) == 2) {
+  if (getOccupied().popCount() == 2) {
     return true;
   }
+
   // Check King+Knight vs King scenarios
-  if ((getAllPieces(toMove) & ~getPieces(toMove, Piece::Knight)) == 0) {
+  if (!(getAllPieces(toMove) & ~getPieces(toMove, Piece::Knight))) {
     return true;
   }
 
@@ -301,14 +310,14 @@ Color Board::getActivePlayer() const { return mTurn; }
 // -------------------------------------------------------------------------------------------------
 bool Board::isInCheck() const
 {
-  auto const kingSquareIndex = bitscan_forward(getPieces(getActivePlayer(), Piece::King));
+  auto const kingSquareIndex = getKingSquare(getActivePlayer());
 
   // no king?
-  if (kingSquareIndex == -1) {
+  if (kingSquareIndex == Square::None) {
     return false;
   }
 
-  return isSquareUnderAttack(~getActivePlayer(), makeSquare(kingSquareIndex));
+  return isSquareUnderAttack(~getActivePlayer(), kingSquareIndex);
 }
 // -------------------------------------------------------------------------------------------------
 bool Board::canShortCastle(Color color) const
@@ -319,13 +328,13 @@ bool Board::canShortCastle(Color color) const
     return false;
   }
 
-  auto       kingIndex  = bitscan_forward(getPieces(color, Piece::King));
+  auto       kingIndex  = getPieces(color, Piece::King).bsf();
   auto const enemyColor = ~color;
 
-  auto const squareMask = ((1ULL << (kingIndex + 1)) | (1ULL << (kingIndex + 2)));
+  auto const squareMask = Bitboard((1ULL << (kingIndex + 1)) | (1ULL << (kingIndex + 2)));
   if (getOccupied() & squareMask) return false;
 
-  auto rookIndex = bitscan_reverse(getPieces(color, Piece::Rook));
+  auto rookIndex = getPieces(color, Piece::Rook).bsr();
 
   // If there is no rook or if the only rook is the wrong one
   if (rookIndex == -1 || rookIndex < kingIndex) return false;
@@ -344,14 +353,15 @@ bool Board::canLongCastle(Color color) const
     return false;
   }
 
-  auto       kingIndex  = bitscan_forward(getPieces(color, Piece::King));
+  auto       kingIndex  = getPieces(color, Piece::King).bsr();
   auto const enemyColor = ~color;
 
-  auto const squareMask =
-      ((1ULL << (kingIndex - 1)) | (1ULL << (kingIndex - 2) | (1ULL << (kingIndex - 3))));
+  auto const squareMask = Bitboard((1ULL << (kingIndex - 1)) |  //
+                                   (1ULL << (kingIndex - 2)) |  //
+                                   (1ULL << (kingIndex - 3)));
   if (getOccupied() & squareMask) return false;
 
-  auto rookIndex = bitscan_forward(getPieces(color, Piece::Rook));
+  auto rookIndex = getPieces(color, Piece::Rook).bsf();
 
   // If there is no rook or if the only rook is the wrong one
   if (rookIndex == -1 || rookIndex > kingIndex) return false;
@@ -414,8 +424,8 @@ Bitboard Board::getKingBlockers(Color them) const
 
   auto const rooksOrQueens   = getPieces(us, Piece::Queen) | getPieces(us, Piece::Rook);
   auto const bishopsOrQueens = getPieces(us, Piece::Queen) | getPieces(us, Piece::Bishop);
-  auto const rqAttacks       = attacks::getSlidingAttacks(Piece::Rook, ksq, 0ULL) & rooksOrQueens;
-  auto const bqAttacks = attacks::getSlidingAttacks(Piece::Bishop, ksq, 0ULL) & bishopsOrQueens;
+  auto const rqAttacks = attacks::getSlidingAttacks(Piece::Rook, ksq, Bitboard{}) & rooksOrQueens;
+  auto const bqAttacks = attacks::getSlidingAttacks(Piece::Bishop, ksq, Bitboard{}) & bishopsOrQueens;
 
   // Find all sliders aiming towards the king position
   auto sliders = getAllPieces(us) & (rqAttacks | bqAttacks);
@@ -424,10 +434,10 @@ Bitboard Board::getKingBlockers(Color them) const
   auto const occupancy = getOccupied() ^ sliders;
 
   while (sliders) {
-    auto const sniperSq = pop_lsb(sliders);
-    auto const b        = BBGetBetween(ksq, makeSquare(sniperSq)) & occupancy;
+    auto const sniperSq = sliders.popLsb();
+    auto const b        = Bitboard::getLineBetween(ksq, makeSquare(sniperSq)) & occupancy;
 
-    if (b && !more_than_one(b)) {
+    if (b && !b.moreThanOne()) {
       blockers |= b;
     }
   }
@@ -450,15 +460,14 @@ bool Board::isSquareUnderAttack(Color enemy, Square square) const
   if (queens) return true;
   auto const king = getPossibleMoves(Piece::King, us, square) & getPieces(enemy, Piece::King);
 
-  return king != 0;
+  return !king.isZero();
 }
 // -------------------------------------------------------------------------------------------------
 Piece Board::getPieceOn(Square sq) const
 {
-  auto square = 1ULL << makeIndex(sq);
   for (auto color = 0; color < 2; ++color) {
     for (auto pt = 0; pt < 6; ++pt) {
-      if (mPieces[color][pt] & square) return Piece(pt);
+      if (mPieces[color][pt] & sq) return Piece(pt);
     }
   }
   return Piece::None;
@@ -466,14 +475,14 @@ Piece Board::getPieceOn(Square sq) const
 // -------------------------------------------------------------------------------------------------
 Bitboard Board::getCheckSquares(Color color, Piece piece) const
 {
-  if (piece == Piece::King) return 0;
+  if (piece == Piece::King) return Bitboard{};
 
   return getPossibleMoves(piece, color, getKingSquare(~color));
 }
 // -------------------------------------------------------------------------------------------------
 Bitboard Board::getCheckers() const
 {
-  if (!isInCheck()) return 0;
+  if (!isInCheck()) return Bitboard{};
 
   auto const us  = getActivePlayer();
   auto const ksq = getKingSquare(us);
@@ -489,7 +498,7 @@ Bitboard Board::getCheckers() const
 // -------------------------------------------------------------------------------------------------
 Square Board::getKingSquare(Color color) const
 {
-  return makeSquare(bitscan_forward(getPieces(color, Piece::King)));
+  return makeSquare(getPieces(color, Piece::King).bsf());
 }
 // -------------------------------------------------------------------------------------------------
 Square Board::getCastlingRook(Color color, CastleSide side) const
@@ -501,7 +510,7 @@ Square Board::getCastlingRook(Color color, CastleSide side) const
     return color == Color::White ? Square::A1 : Square::A8;
 }
 // -------------------------------------------------------------------------------------------------
-Square Board::getEnPassantSquare() const { return makeSquare(bitscan_forward(mEnPassant)); }
+Square Board::getEnPassantSquare() const { return makeSquare(mEnPassant.bsf()); }
 // -------------------------------------------------------------------------------------------------
 bool Board::isMoveLegal(Move const& move) const
 {
@@ -544,7 +553,7 @@ void Board::makeMove(Move move)
     return;
   }
 
-  mEnPassant = 0ULL;
+  mEnPassant.clear();
 
   if (move.isCastling()) {
     auto const kingside = to > from;
@@ -597,21 +606,17 @@ void Board::makeMove(Move move)
 void Board::addPiece(Piece type, Color color, Square square)
 {
   mBoardChanged = true;
-  // clang-format off
-  mPieces[color][type] |= 1ULL << makeIndex(square); 
-  mAllPieces[color]    |= 1ULL << makeIndex(square);
-  mOccupied            |= 1ULL << makeIndex(square);
-  // clang-format on
+  mPieces[color][type].setBit(square);
+  mAllPieces[color].setBit(square);
+  mOccupied.setBit(square);
 }
 // -------------------------------------------------------------------------------------------------
 void Board::removePiece(Piece type, Color color, Square square)
 {
   mBoardChanged = true;
-  // clang-format off
-  mPieces[color][type] &= ~(1ULL << makeIndex(square));
-  mAllPieces[color]    &= ~(1ULL << makeIndex(square));
-  mOccupied            &= ~(1ULL << makeIndex(square));
-  // clang-format on
+  mPieces[color][type].clearBit(square);
+  mAllPieces[color].clearBit(square);
+  mOccupied.clearBit(square);
 }
 // -------------------------------------------------------------------------------------------------
 void Board::movePiece(Piece type, Color color, Square from, Square to)
@@ -642,15 +647,15 @@ void Board::movePiece(Piece type, Color color, Square from, Square to)
       auto const epSq  = (indexTo + (color == Color::White ? -8 : 8));
       if (getFile(toSq) == File::FileA) {
         if (pawns & (toSq + Direction::East)) {
-          mEnPassant = 1ULL << epSq;
+          mEnPassant.setBit(epSq);
         }
       } else if (getFile(toSq) == File::FileH) {
         if (pawns & (toSq + Direction::West)) {
-          mEnPassant = 1ULL << epSq;
+          mEnPassant.setBit(epSq);
         }
       } else {
         if (pawns & (toSq + Direction::West) || pawns & (toSq + Direction::East)) {
-          mEnPassant = 1ULL << epSq;
+          mEnPassant.setBit(epSq);
         }
       }
     }
@@ -669,14 +674,14 @@ void Board::clearBitboards()
   for (Color color : {Color::White, Color::Black}) {
     for (Piece Piece :
          {Piece::Pawn, Piece::Knight, Piece::Bishop, Piece::Rook, Piece::Queen, Piece::King}) {
-      mPieces[color][Piece] = 0ULL;
+      mPieces[color][Piece].clear();
     }
 
-    mAllPieces[color] = 0ULL;
+    mAllPieces[color].clear();
   }
 
-  mEnPassant = 0ULL;
-  mOccupied  = 0ULL;
+  mEnPassant.clear();
+  mOccupied.clear();
 }
 // -------------------------------------------------------------------------------------------------
 void Board::updateBitboards()

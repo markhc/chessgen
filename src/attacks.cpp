@@ -94,9 +94,10 @@ void precomputeTables()
   for (Square s1 = Square::A1; s1 <= Square::H8; ++s1) {
     for (auto&& pt : {Piece::Bishop, Piece::Rook}) {
       for (Square s2 = Square::A1; s2 <= Square::H8; ++s2) {
-        if (getSlidingAttacks(pt, s1, 0ULL) & s2) {
+        if (getSlidingAttacks(pt, s1, Bitboard{}) & s2) {
           lines[makeIndex(s1)][makeIndex(s2)] =
-              ((getSlidingAttacks(pt, s1, 0ULL) & getSlidingAttacks(pt, s2, 0ULL)) | s1) | s2;
+              ((getSlidingAttacks(pt, s1, Bitboard{}) & getSlidingAttacks(pt, s2, Bitboard{})) | s1) |
+              s2;
         }
       }
     }
@@ -118,8 +119,7 @@ Bitboard getSlidingAttacks(Piece piece, Square from, Bitboard blockers)
     case Piece::Rook:
       return getRookAttacks(makeIndex(from), blockers);
     case Piece::Queen:
-      return getBishopAttacks(makeIndex(from), blockers) |
-             getRookAttacks(makeIndex(from), blockers);
+      return getBishopAttacks(makeIndex(from), blockers) | getRookAttacks(makeIndex(from), blockers);
     case Piece::King:
     case Piece::Pawn:
     case Piece::Knight:
@@ -132,7 +132,7 @@ Bitboard getSlidingAttacks(Piece piece, Square from, Bitboard blockers)
 void initPawnAttacks()
 {
   for (int i = 0; i < 64; i++) {
-    auto const start = 1ULL << i;
+    auto const start = Bitboard{1ULL << i};
 
     auto const whiteAttackBb = ((start << 9) & ~Bitboards::FileA) | ((start << 7) & ~Bitboards::FileH);
     auto const blackAttackBb = ((start >> 9) & ~Bitboards::FileH) | ((start >> 7) & ~Bitboards::FileA);
@@ -145,7 +145,7 @@ void initPawnAttacks()
 void initKnightAttacks()
 {
   for (int i = 0; i < 64; i++) {
-    auto const start = 1ULL << i;
+    auto const start = Bitboard{1ULL << i};
 
     auto const attackBb =
         (((start << 15) | (start >> 17)) & ~Bitboards::FileH) |                      // Left 1
@@ -161,7 +161,7 @@ void initKnightAttacks()
 void initKingAttacks()
 {
   for (int i = 0; i < 64; i++) {
-    auto const start = 1ULL << i;
+    auto const start = Bitboard{1ULL << i};
 
     auto const attackBb = (((start << 7) | (start >> 9) | (start >> 1)) & (~Bitboards::FileH)) |
                           (((start << 9) | (start >> 7) | (start << 1)) & (~Bitboards::FileA)) |
@@ -179,7 +179,7 @@ void initRookMagicTable()
     // For all possible blockers for this square
     for (int blockerIndex = 0; blockerIndex < (1 << magics::rookBits[square]); blockerIndex++) {
       auto const blockers = getBlockersFromIndex(blockerIndex, rookMasks[square]);
-      auto const hash     = (blockers * magics::rook[square]) >> (64 - magics::rookBits[square]);
+      auto const hash = (blockers.getBits() * magics::rook[square]) >> (64 - magics::rookBits[square]);
       rookTable[square][hash] = getRookAttacksSlow(square, blockers);
     }
   }
@@ -192,7 +192,8 @@ void initBishopMagicTable()
     // For all possible blockers for this square
     for (int blockerIndex = 0; blockerIndex < (1 << magics::bishopBits[square]); blockerIndex++) {
       auto const blockers = getBlockersFromIndex(blockerIndex, bishopMasks[square]);
-      auto const hash = (blockers * magics::bishop[square]) >> (64 - magics::bishopBits[square]);
+      auto const hash =
+          (blockers.getBits() * magics::bishop[square]) >> (64 - magics::bishopBits[square]);
       bishopTable[square][hash] = getBishopAttacksSlow(square, blockers);
     }
   }
@@ -223,71 +224,42 @@ void initBishopMasks()
 // -------------------------------------------------------------------------------------------------
 Bitboard getRookAttacksSlow(int square, Bitboard blockers)
 {
-  std::uint64_t attacks = 0;
+  auto getAttacks = [square, blockers](Direction d, auto f) {
+    auto       attacks        = rays::getRayForSquare(d, square);
+    auto const maskedBlockers = attacks & blockers;
+    if (maskedBlockers) {
+      attacks &= ~rays::getRayForSquare(d, ((maskedBlockers).*f)());
+    }
+    return attacks;
+  };
 
-  attacks |= rays::getRayForSquare(Direction::North, square);
-  if (rays::getRayForSquare(Direction::North, square) & blockers) {
-    auto maskedBlockers = rays::getRayForSquare(Direction::North, square) & blockers;
-    attacks &= ~(rays::getRayForSquare(Direction::North, bitscan_forward(maskedBlockers)));
-  }
+  Bitboard attacks{};
 
-  attacks |= rays::getRayForSquare(Direction::South, square);
-  if (rays::getRayForSquare(Direction::South, square) & blockers) {
-    auto maskedBlockers = rays::getRayForSquare(Direction::South, square) & blockers;
-    attacks &= ~(rays::getRayForSquare(Direction::South, bitscan_reverse(maskedBlockers)));
-  }
+  attacks |= getAttacks(Direction::North, &Bitboard::bsf);
+  attacks |= getAttacks(Direction::South, &Bitboard::bsr);
+  attacks |= getAttacks(Direction::East, &Bitboard::bsf);
+  attacks |= getAttacks(Direction::West, &Bitboard::bsr);
 
-  attacks |= rays::getRayForSquare(Direction::East, square);
-  if (rays::getRayForSquare(Direction::East, square) & blockers) {
-    auto maskedBlockers = rays::getRayForSquare(Direction::East, square) & blockers;
-    attacks &= ~(rays::getRayForSquare(Direction::East, bitscan_forward(maskedBlockers)));
-  }
-
-  // Direction::West
-  attacks |= rays::getRayForSquare(Direction::West, square);
-  if (rays::getRayForSquare(Direction::West, square) & blockers) {
-    auto maskedBlockers = rays::getRayForSquare(Direction::West, square) & blockers;
-    attacks &= ~(rays::getRayForSquare(Direction::West, bitscan_reverse(maskedBlockers)));
-  }
-
-  return Bitboard{attacks};
+  return attacks;
 }
 // -------------------------------------------------------------------------------------------------
 Bitboard getBishopAttacksSlow(int square, Bitboard blockers)
 {
-  Bitboard attacks{0};
+  auto getAttacks = [square, blockers](Direction d, auto f) {
+    auto       attacks        = rays::getRayForSquare(d, square);
+    auto const maskedBlockers = attacks & blockers;
+    if (maskedBlockers) {
+      attacks &= ~rays::getRayForSquare(d, ((maskedBlockers).*f)());
+    }
+    return attacks;
+  };
 
-  // Direction::North Direction::West
-  attacks |= rays::getRayForSquare(Direction::NorthWest, square);
-  if (rays::getRayForSquare(Direction::NorthWest, square) & blockers) {
-    attacks &= ~(rays::getRayForSquare(
-        Direction::NorthWest,
-        (bitscan_forward(rays::getRayForSquare(Direction::NorthWest, square) & blockers))));
-  }
+  Bitboard attacks{};
 
-  // Direction::North Direction::East
-  attacks |= rays::getRayForSquare(Direction::NorthEast, square);
-  if (rays::getRayForSquare(Direction::NorthEast, square) & blockers) {
-    attacks &= ~(rays::getRayForSquare(
-        Direction::NorthEast,
-        bitscan_forward(rays::getRayForSquare(Direction::NorthEast, square) & blockers)));
-  }
-
-  // Direction::South Direction::East
-  attacks |= rays::getRayForSquare(Direction::SouthEast, square);
-  if (rays::getRayForSquare(Direction::SouthEast, square) & blockers) {
-    attacks &= ~(rays::getRayForSquare(
-        Direction::SouthEast,
-        bitscan_reverse(rays::getRayForSquare(Direction::SouthEast, square) & blockers)));
-  }
-
-  // Direction::South Direction::West
-  attacks |= rays::getRayForSquare(Direction::SouthWest, square);
-  if (rays::getRayForSquare(Direction::SouthWest, square) & blockers) {
-    attacks &= ~(rays::getRayForSquare(
-        Direction::SouthWest,
-        bitscan_reverse(rays::getRayForSquare(Direction::SouthWest, square) & blockers)));
-  }
+  attacks |= getAttacks(Direction::NorthWest, &Bitboard::bsf);
+  attacks |= getAttacks(Direction::NorthEast, &Bitboard::bsf);
+  attacks |= getAttacks(Direction::SouthWest, &Bitboard::bsr);
+  attacks |= getAttacks(Direction::SouthEast, &Bitboard::bsr);
 
   return attacks;
 }
@@ -295,30 +267,28 @@ Bitboard getBishopAttacksSlow(int square, Bitboard blockers)
 Bitboard getRookAttacks(int square, Bitboard blockers)
 {
   blockers &= rookMasks[square];
-  auto const key = (blockers * magics::rook[square]) >> (64 - magics::rookBits[square]);
+  auto const key = (blockers.getBits() * magics::rook[square]) >> (64 - magics::rookBits[square]);
   return rookTable[square][key];
 }
 // -------------------------------------------------------------------------------------------------
 Bitboard getBishopAttacks(int square, Bitboard blockers)
 {
   blockers &= bishopMasks[square];
-  auto const key = (blockers * magics::bishop[square]) >> (64 - magics::bishopBits[square]);
-  int        sq  = square;
-  return bishopTable[sq][key];
+  auto const key = (blockers.getBits() * magics::bishop[square]) >> (64 - magics::bishopBits[square]);
+  return bishopTable[square][key];
 }
 // -------------------------------------------------------------------------------------------------
 Bitboard getBlockersFromIndex(int index, Bitboard blockerMask)
 {
-  auto mask     = blockerMask;
-  auto blockers = 0ULL;
-  auto bits     = pop_count(mask);
+  auto blockers = Bitboard{};
+  auto bits     = blockerMask.popCount();
   for (auto i = 0; i < bits; i++) {
-    int bitPos = pop_lsb(mask);
+    int bitPos = blockerMask.popLsb();
     if (index & (1 << i)) {
-      blockers |= (1ULL << bitPos);
+      blockers.setBit(bitPos);
     }
   }
-  return Bitboard{blockers};
+  return blockers;
 }
 }  // namespace attacks
 }  // namespace chessgen

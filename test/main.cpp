@@ -14,6 +14,8 @@ void playGame(int id, int& nmoves, std::uint64_t& legalMoves)
 
   Board board{};
   auto  movesThisGame = 0;
+
+  // std::cout << board.prettyPrint() << std::endl;
   while (true) {
     auto const& moves = board.getLegalMoves();
     legalMoves += moves.size();
@@ -25,7 +27,7 @@ void playGame(int id, int& nmoves, std::uint64_t& legalMoves)
     auto const m = rng() % moves.size();
 
     // std::cout << "Playing: " << to_string(moves[m].fromSquare()) << " "
-    //          << to_string(moves[m].toSquare()) << std::endl;
+    //           << to_string(moves[m].toSquare()) << std::endl;
     board.makeMove(moves[m]);
     movesThisGame++;
 
@@ -113,7 +115,7 @@ int main()
   std::cout << "Legal moves generated:  " << totalEvaluatedMoves << "\n";
   std::cout << "Moves generated/second: " << totalEvaluatedMoves / (double)(seconds) << "\n";
 
-  playGameDebug(leastMovesId);
+  // playGameDebug(leastMovesId);
 
   //::testing::InitGoogleTest(&argc, argv);
   // return RUN_ALL_TESTS();

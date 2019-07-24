@@ -31,11 +31,6 @@ inline int bitscan_reverse(std::uint64_t value)
 }
 
 /**
- * @brief Sreturns true if more than 1 bit is set
- */
-constexpr bool more_than_one(Bitboard b) { return b & (b - 1); };
-
-/**
  * @brief Sets the least significant non-zero bit to 0 and returns its index.
  */
 inline int pop_lsb(std::uint64_t &value)
