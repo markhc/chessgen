@@ -5,6 +5,5 @@ target_sources(${MAIN_TARGET}
     board.cpp
     move.cpp
     movegen.cpp
-    rays.cpp
   PUBLIC
 )

@@ -1,8 +1,6 @@
 #include "chessgen/move.hpp"
 #include "chessgen/helpers.hpp"
 
-#include <fmt/format.h>
-
 namespace chessgen
 {
 // -------------------------------------------------------------------------------------------------

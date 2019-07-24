@@ -1,6 +1,5 @@
 #include "chessgen/board.hpp"
 
-#include <fmt/format.h>
 #include <charconv>
 #include <iostream>
 #include <mutex>
@@ -11,7 +10,6 @@
 #include "chessgen/attacks.hpp"
 #include "chessgen/helpers.hpp"
 #include "chessgen/movegen.hpp"
-#include "chessgen/rays.hpp"
 
 namespace chessgen
 {
@@ -21,19 +19,13 @@ static std::once_flag   _flag;
 // -------------------------------------------------------------------------------------------------
 Board::Board()
 {
-  std::call_once(_flag, [] {
-    rays::precomputeTables();
-    attacks::precomputeTables();
-  });
+  std::call_once(_flag, [] { attacks::precomputeTables(); });
   loadFen(_initialFen);
 }
 // -------------------------------------------------------------------------------------------------
 Board::Board(std::string_view initialFen)
 {
-  std::call_once(_flag, [] {
-    rays::precomputeTables();
-    attacks::precomputeTables();
-  });
+  std::call_once(_flag, [] { attacks::precomputeTables(); });
   loadFen(initialFen);
 }
 // -------------------------------------------------------------------------------------------------

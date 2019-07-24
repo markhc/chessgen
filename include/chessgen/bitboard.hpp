@@ -48,7 +48,8 @@ public:
   constexpr void          clearBit(Square s) { bits &= ~(1ULL << makeIndex(s)); }
   constexpr bool          moreThanOne() const { return bits & (bits - 1); }
   constexpr int           popCount() const { return __builtin_popcountll(bits); }
-  constexpr int           bsf() const
+
+  constexpr int bsf() const
   {
     if (isZero()) {
       return -1;

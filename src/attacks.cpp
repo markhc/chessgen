@@ -1,5 +1,4 @@
 #include "chessgen/attacks.hpp"
-#include "chessgen/rays.hpp"
 
 namespace chessgen
 {
@@ -54,6 +53,54 @@ constexpr int bishopBits[64] = {6, 5, 5, 5, 5, 5, 5, 6, 5, 5, 5, 5, 5, 5, 5, 5, 
                                 7, 7, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 5, 5, 5, 5, 5, 5, 6};
 }  // namespace magics
 
+static constexpr Bitboard moveWest(Bitboard bb, int n)
+{
+  for (int i = 0; i < n; i++) {
+    bb = ((bb >> 1) & (~Bitboards::FileH));
+  }
+  return bb;
+}
+static constexpr Bitboard moveEast(Bitboard bb, int n)
+{
+  for (int i = 0; i < n; i++) {
+    bb = ((bb << 1) & (~Bitboards::FileA));
+  }
+  return bb;
+}
+
+class Rays
+{
+public:
+  auto&       operator[](Direction d) { return mRays[makeIndex(d)]; }
+  auto const& operator[](Direction d) const { return mRays[makeIndex(d)]; }
+
+private:
+  Bitboard mRays[makeIndex(Direction::Count)][64];
+};
+
+/**
+ * @brief Precomputed ray table
+ */
+static Rays _rays;
+
+static void precomputeRays()
+{
+  for (auto sq = 0; sq < 64; ++sq) {
+    auto const file = static_cast<int>(getFile(makeSquare(sq)));
+    auto const rank = static_cast<int>(getRank(makeSquare(sq)));
+    // clang-format off
+    _rays[Direction::North][sq]     = Bitboard{0x0101010101010100ULL} << sq;
+    _rays[Direction::South][sq]     = Bitboard{0x0080808080808080ULL} >> (63 - sq);
+    _rays[Direction::East][sq]      = Bitboard{2 * ((1ULL << (sq | 7)) - (1ULL << sq))};
+    _rays[Direction::West][sq]      = Bitboard{(1ULL << sq) - (1ULL << (sq & 56))};
+    _rays[Direction::NorthEast][sq] = moveEast(Bitboard{0x8040201008040200ULL},     file) << (     rank  * 8);
+    _rays[Direction::SouthEast][sq] = moveEast(Bitboard{0x0002040810204080ULL},     file) >> ((7 - rank) * 8);
+    _rays[Direction::NorthWest][sq] = moveWest(Bitboard{0x0102040810204000ULL}, 7 - file) << (     rank  * 8);
+    _rays[Direction::SouthWest][sq] = moveWest(Bitboard{0x0040201008040201ULL}, 7 - file) >> ((7 - rank) * 8);
+    // clang-format on
+  }
+}
+
 static Bitboard nonSlidingAttacks[2][6][64] = {};
 
 static Bitboard rookTable[64][4096]   = {};
@@ -70,15 +117,19 @@ void initBishopMagicTable();
 void initRookMasks();
 void initBishopMasks();
 
-Bitboard getRookAttacksSlow(int square, Bitboard blockers);
-Bitboard getBishopAttacksSlow(int square, Bitboard blockers);
-Bitboard getRookAttacks(int square, Bitboard blockers);
-Bitboard getBishopAttacks(int square, Bitboard blockers);
-Bitboard getBlockersFromIndex(int index, Bitboard blockerMask);
+static Bitboard getRookAttacksSlow(int square, Bitboard blockers);
+static Bitboard getBishopAttacksSlow(int square, Bitboard blockers);
+static Bitboard getRookAttacks(int square, Bitboard blockers);
+static Bitboard getBishopAttacks(int square, Bitboard blockers);
+static Bitboard getBlockersFromIndex(int index, Bitboard blockerMask);
+static void     precomputeRays();
+static Bitboard getRayForSquare(Direction d, int square) { return _rays[d][square]; }
 
 // -------------------------------------------------------------------------------------------------
 void precomputeTables()
 {
+  precomputeRays();
+
   initPawnAttacks();
   initKnightAttacks();
   initKingAttacks();
@@ -200,10 +251,10 @@ void initBishopMagicTable()
 void initRookMasks()
 {
   for (auto square = 0; square < 64; ++square) {
-    rookMasks[square] = (rays::getRayForSquare(Direction::North, square) & ~Bitboards::Rank8) |
-                        (rays::getRayForSquare(Direction::South, square) & ~Bitboards::Rank1) |
-                        (rays::getRayForSquare(Direction::East, square) & ~Bitboards::FileH) |
-                        (rays::getRayForSquare(Direction::West, square) & ~Bitboards::FileA);
+    rookMasks[square] = (getRayForSquare(Direction::North, square) & ~Bitboards::Rank8) |
+                        (getRayForSquare(Direction::South, square) & ~Bitboards::Rank1) |
+                        (getRayForSquare(Direction::East, square) & ~Bitboards::FileH) |
+                        (getRayForSquare(Direction::West, square) & ~Bitboards::FileA);
   }
 }
 // -------------------------------------------------------------------------------------------------
@@ -211,10 +262,10 @@ void initBishopMasks()
 {
   auto const edges = Bitboards::FileA | Bitboards::FileH | Bitboards::Rank1 | Bitboards::Rank8;
   for (auto square = 0; square < 64; ++square) {
-    bishopMasks[square] = rays::getRayForSquare(Direction::NorthEast, square) |
-                          rays::getRayForSquare(Direction::NorthWest, square) |
-                          rays::getRayForSquare(Direction::SouthEast, square) |
-                          rays::getRayForSquare(Direction::SouthWest, square);
+    bishopMasks[square] = getRayForSquare(Direction::NorthEast, square) |
+                          getRayForSquare(Direction::NorthWest, square) |
+                          getRayForSquare(Direction::SouthEast, square) |
+                          getRayForSquare(Direction::SouthWest, square);
 
     bishopMasks[square] = bishopMasks[square] & ~edges;
   }
@@ -223,10 +274,10 @@ void initBishopMasks()
 Bitboard getRookAttacksSlow(int square, Bitboard blockers)
 {
   auto getAttacks = [square, blockers](Direction d, auto f) {
-    auto       attacks        = rays::getRayForSquare(d, square);
+    auto       attacks        = getRayForSquare(d, square);
     auto const maskedBlockers = attacks & blockers;
     if (maskedBlockers) {
-      attacks &= ~rays::getRayForSquare(d, ((maskedBlockers).*f)());
+      attacks &= ~getRayForSquare(d, ((maskedBlockers).*f)());
     }
     return attacks;
   };
@@ -244,10 +295,10 @@ Bitboard getRookAttacksSlow(int square, Bitboard blockers)
 Bitboard getBishopAttacksSlow(int square, Bitboard blockers)
 {
   auto getAttacks = [square, blockers](Direction d, auto f) {
-    auto       attacks        = rays::getRayForSquare(d, square);
+    auto       attacks        = getRayForSquare(d, square);
     auto const maskedBlockers = attacks & blockers;
     if (maskedBlockers) {
-      attacks &= ~rays::getRayForSquare(d, ((maskedBlockers).*f)());
+      attacks &= ~getRayForSquare(d, ((maskedBlockers).*f)());
     }
     return attacks;
   };
