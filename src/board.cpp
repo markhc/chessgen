@@ -1,4 +1,4 @@
-#include "chessgen/board.hpp"
+#include "cppgen/board.hpp"
 
 #include <charconv>
 #include <iostream>
@@ -7,11 +7,11 @@
 #include <stdexcept>
 #include <string_view>
 
-#include "chessgen/attacks.hpp"
-#include "chessgen/helpers.hpp"
-#include "chessgen/movegen.hpp"
+#include "cppgen/attacks.hpp"
+#include "cppgen/helpers.hpp"
+#include "cppgen/movegen.hpp"
 
-namespace chessgen
+namespace cppgen
 {
 static std::string_view _initialFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 static std::once_flag   _flag;
@@ -518,7 +518,7 @@ std::vector<Move> const& Board::getLegalMoves() const
   if (mBoardChanged) {
     auto lock = std::unique_lock{mMovesMutex};
     if (mBoardChanged) {
-      mLegalMoves   = movegen::generateMoves<movegen::MoveType::Legal>(*this);
+      mLegalMoves   = generateMoves<GenType::Legal>(*this);
       mBoardChanged = false;
     }
   }
@@ -730,4 +730,4 @@ Bitboard Board::getQueenAttacksForSquare(Square square, Color color) const
   return attacks::getSlidingAttacks(Piece::Queen, square, getOccupied()) & ~getAllPieces(color);
 }
 // -------------------------------------------------------------------------------------------------
-}  // namespace chessgen
+}  // namespace cppgen

@@ -5,7 +5,7 @@
 #include "exceptions.hpp"
 #include "types.hpp"
 
-namespace chessgen
+namespace cppgen
 {
 class Move
 {
@@ -49,4 +49,4 @@ private:
   Square mFromSquare{};
   Square mToSquare{};
 };
-}  // namespace chessgen
+}  // namespace cppgen

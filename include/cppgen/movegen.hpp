@@ -3,12 +3,11 @@
 #include <vector>
 #include "move.hpp"
 
-namespace chessgen
+namespace cppgen
 {
 class Board;
-namespace movegen
-{
-enum class MoveType {
+
+enum class GenType {
   Quiets,       // Generates all pseudo-legal non-captures and underpromotions
   QuietChecks,  // Generates all pseudo-legal non-captures and underpromotions that give check
   Captures,     // Generates all pseudo-legal captures and queen promotions
@@ -19,14 +18,11 @@ enum class MoveType {
 /**
  * @brief Generate a set of moves based on the given board position
  *
- * @tparam  Type  The move type to generate
- *
  * @param   board The board to generate moves for
  *
  * @returns The move list
  */
-template <MoveType Type>
+template <GenType Type>
 auto generateMoves(Board const& board) -> std::vector<Move>;
 
-}  // namespace movegen
-}  // namespace chessgen
+}  // namespace cppgen

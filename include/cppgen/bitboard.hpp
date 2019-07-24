@@ -5,7 +5,7 @@
 #include "platform.hpp"
 #include "types.hpp"
 
-namespace chessgen
+namespace cppgen
 {
 class Bitboard
 {
@@ -162,4 +162,4 @@ constexpr Bitboard Bitboard::shiftTowards(Direction d) const
       return Bitboard{};
   }
 }
-}  // namespace chessgen
+}  // namespace cppgen

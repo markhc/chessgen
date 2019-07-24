@@ -1,15 +1,15 @@
 cmake_minimum_required(VERSION 3.13)
 
-project(chessgen 
+project(cppgen 
   DESCRIPTION "Chess move generator and validator written in C++17"
   VERSION     1.0.0
   LANGUAGES   CXX
 )
 
-set(MAIN_TARGET "chessgen")
+set(MAIN_TARGET "cppgen")
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-  set(CHESSGEN_COMPILER_FLAGS 
+  set(CPPGEN_COMPILER_FLAGS 
     # Enable "all" warnings
     -Wall -Wextra -Weverything -Wpedantic
     # But disable some particularly annoying ones
@@ -26,9 +26,10 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     -Wno-gcc-compat
     -Wno-comma 
     -Wno-extra-semi
+    -Wno-undefined-func-template
   )
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-  set(CHESSGEN_COMPILER_FLAGS
+  set(CPPGEN_COMPILER_FLAGS
     # Enable "all" warnings
     -Wall -Wextra -pedantic 
     # Plus some others not included in "all"
@@ -56,7 +57,7 @@ find_package(fmt CONFIG REQUIRED)
 add_library(${MAIN_TARGET} "")
 target_compile_options(${MAIN_TARGET} 
   PRIVATE 
-    ${CHESSGEN_COMPILER_FLAGS}
+    ${CPPGEN_COMPILER_FLAGS}
 )
 target_include_directories(${MAIN_TARGET} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

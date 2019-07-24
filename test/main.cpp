@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <chessgen/board.hpp>
+#include <cppgen/board.hpp>
 #include <iomanip>
 #include <iostream>
 
@@ -8,7 +8,7 @@
 
 void playGame(int id, int& nmoves, std::uint64_t& legalMoves)
 {
-  using namespace chessgen;
+  using namespace cppgen;
 
   std::mt19937 rng(id);
 
@@ -42,7 +42,7 @@ void playGame(int id, int& nmoves, std::uint64_t& legalMoves)
 
 void playGameDebug(int id)
 {
-  using namespace chessgen;
+  using namespace cppgen;
 
   std::mt19937 rng(id);
 
@@ -80,7 +80,7 @@ void playGameDebug(int id)
 
 int main()
 {
-  using namespace chessgen;
+  using namespace cppgen;
   using namespace std::literals;
 
   auto i                   = int{};

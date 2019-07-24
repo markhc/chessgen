@@ -2,7 +2,7 @@
 
 #include "platform.hpp"
 
-namespace chessgen
+namespace cppgen
 {
 enum class Direction {
   North,
@@ -247,4 +247,4 @@ constexpr int makeIndex(E e)
 {
   return static_cast<int>(e);
 }
-}  // namespace chessgen
+}  // namespace cppgen

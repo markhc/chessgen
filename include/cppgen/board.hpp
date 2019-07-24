@@ -9,7 +9,7 @@
 #include "config.hpp"
 #include "move.hpp"
 
-namespace chessgen
+namespace cppgen
 {
 enum CastleSide {
   None  = (0),       ///< Players cannot castle
@@ -17,7 +17,7 @@ enum CastleSide {
   Queen = (1 << 1),  ///< Black can castle on the king side
 };
 
-CHESSGEN_ENUMOPS(CastleSide)
+CPPGEN_ENUMOPS(CastleSide)
 
 class Board
 {
@@ -265,29 +265,10 @@ public:
   bool isSquareUnderAttack(Color enemy, Square square) const;
 
 private:
-  /**
-   * @brief Adds a piece to the board and updates all related bitboards
-   */
   void addPiece(Piece type, Color color, Square square);
-
-  /**
-   * @brief Removes a piece from the board and updates all related bitboards
-   */
   void removePiece(Piece type, Color color, Square square);
-
-  /**
-   * @brief Moves a piece from a square to another, adjusting the necessary bitboards and flags
-   */
   void movePiece(Piece type, Color color, Square from, Square to);
-
-  /**
-   * @brief Clears all bitboard (removes all pieces from the board)
-   */
   void clearBitboards();
-
-  /**
-   * @brief Updates all non-piece bitboards to reflect changes in the pieces bitboards
-   */
   void updateBitboards();
 
   Bitboard getWhitePawnAttacksForSquare(Square square) const;
@@ -310,4 +291,4 @@ private:
   mutable std::atomic_bool  mBoardChanged{true};
   mutable std::mutex        mMovesMutex{};
 };
-}  // namespace chessgen
+}  // namespace cppgen

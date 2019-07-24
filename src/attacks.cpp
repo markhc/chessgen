@@ -1,6 +1,6 @@
-#include "chessgen/attacks.hpp"
+#include "cppgen/attacks.hpp"
 
-namespace chessgen
+namespace cppgen
 {
 namespace attacks
 {
@@ -336,4 +336,4 @@ Bitboard getBlockersFromIndex(int index, Bitboard blockerMask)
   return blockers;
 }
 }  // namespace attacks
-}  // namespace chessgen
+}  // namespace cppgen

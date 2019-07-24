@@ -1,9 +1,9 @@
-#include "chessgen/bitboard.hpp"
-#include "chessgen/attacks.hpp"
+#include "cppgen/bitboard.hpp"
+#include "cppgen/attacks.hpp"
 
 #include <sstream>
 
-namespace chessgen
+namespace cppgen
 {
 Bitboard Bitboard::getLineBetween(Square a, Square b)
 {
@@ -30,4 +30,4 @@ std::string Bitboard::prettyPrint() const
 
   return os.str();
 }
-}  // namespace chessgen
+}  // namespace cppgen

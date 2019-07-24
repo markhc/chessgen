@@ -4,14 +4,13 @@
 #include <stdexcept>
 #include <string_view>
 
-namespace chessgen
+namespace cppgen
 {
 class InvalidSANException : public std::runtime_error
 {
 public:
   InvalidSANException(std::string_view san)
-      : std::runtime_error(
-            fmt::format("\"{}\" is not a valid Standard Algebraic Notation", san))
+      : std::runtime_error(fmt::format("\"{}\" is not a valid Standard Algebraic Notation", san))
   {
   }
 };
@@ -23,4 +22,4 @@ public:
   {
   }
 };
-}  // namespace chessgen
+}  // namespace cppgen

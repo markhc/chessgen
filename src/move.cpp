@@ -1,7 +1,7 @@
-#include "chessgen/move.hpp"
-#include "chessgen/helpers.hpp"
+#include "cppgen/move.hpp"
+#include "cppgen/helpers.hpp"
 
-namespace chessgen
+namespace cppgen
 {
 // -------------------------------------------------------------------------------------------------
 Move::Move() {}
@@ -47,4 +47,4 @@ bool Move::isEnPassant() const { return mType == Type::EnPassant; }
 // -------------------------------------------------------------------------------------------------
 Piece Move::promotedTo() const { return mPromotedTo; }
 // -------------------------------------------------------------------------------------------------
-}  // namespace chessgen
+}  // namespace cppgen
