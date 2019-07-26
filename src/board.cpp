@@ -1,5 +1,6 @@
 #include "cppgen/board.hpp"
 
+#include <cctype>
 #include <charconv>
 #include <iostream>
 #include <mutex>

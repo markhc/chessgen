@@ -17,18 +17,18 @@
  */
 #include <intrin.h>
 
-#define intrin_popcount __popcnt64
+#define intrin_popcount _mm_popcnt_u64
 inline int intrin_forward_scan(unsigned long x)
 {
-  int i = 0;
+  unsigned long i = 0;
   _BitScanForward64(&i, x);
-  return i;
+  return static_cast<int>(i);
 }
 inline int intrin_reverse_scan(unsigned long x)
 {
-  int i = 0;
+  unsigned long i = 0;
   _BitScanReverse64(&i, x);
-  return i;
+  return static_cast<int>(i);
 }
 #else
 #error Sorry, this compiler is not supported.

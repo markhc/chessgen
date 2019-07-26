@@ -71,26 +71,26 @@ public:
   {
     return bits & (bits - 1);
   }
-  constexpr int popCount() const
-  {
-    return intrin_popcount(bits);
-  }
 
-  constexpr int bsf() const
+  int popCount() const
+  {
+    return static_cast<int>(intrin_popcount(bits));
+  }
+  int bsf() const
   {
     if (isZero()) {
       return -1;
     }
     return intrin_forward_scan(bits) - 1;
   }
-  constexpr int bsr() const
+  int bsr() const
   {
     if (isZero()) {
       return -1;
     }
     return 63 - intrin_reverse_scan(bits);
   }
-  constexpr int popLsb()
+  int popLsb()
   {
     int lsbIndex = intrin_forward_scan(bits) - 1;
     bits &= bits - 1;
