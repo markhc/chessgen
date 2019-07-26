@@ -1,9 +1,18 @@
 #pragma once
 
+#include <stdexcept>
+#include <string>
+#include <string_view>
 #include "platform.hpp"
 
 namespace cppgen
 {
+enum class CastleSide {
+  None  = (0),       ///< Players cannot castle
+  King  = (1 << 0),  ///< White can castle on the king side
+  Queen = (1 << 1),  ///< Black can castle on the king side
+};
+
 enum class Direction {
   North,
   South,

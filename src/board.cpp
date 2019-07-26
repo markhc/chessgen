@@ -1,5 +1,6 @@
 #include "cppgen/board.hpp"
 
+#include <fmt/format.h>
 #include <charconv>
 #include <iostream>
 #include <mutex>
@@ -107,7 +108,7 @@ void Board::loadFen(std::string_view fen)
         } else if (c == 'q') {
           mCastleRights[Color::Black] = mCastleRights[Color::Black] | CastleSide::Queen;
         } else {
-          throw InvalidFENException{fmt::format("Invalid FEN record. Invalid castle rights '{}'", str)};
+          throw std::runtime_error{fmt::format("Invalid FEN record. Invalid castle rights '{}'", str)};
         }
       }
     }
@@ -274,6 +275,257 @@ std::string Board::prettyPrint(bool useUnicodeChars) const
   return ss.str();
 }
 // -------------------------------------------------------------------------------------------------
+std::vector<Move> const& Board::getLegalMoves() const
+{
+  if (mBoardChanged) {
+    auto lock = std::unique_lock{mMovesMutex};
+    if (mBoardChanged) {
+      mLegalMoves   = generateMoves<GenType::Legal>(*this);
+      mBoardChanged = false;
+    }
+  }
+
+  return mLegalMoves;
+}
+// -------------------------------------------------------------------------------------------------
+bool Board::isMoveLegal(Move const& move) const
+{
+  for (auto&& m : getLegalMoves()) {
+    if (move.isCastling() && m.isCastling() && move.getCastleSide() == m.getCastleSide()) {
+      return true;
+    }
+    if (m.getType() == move.getType() && m.fromSquare() == move.fromSquare() &&
+        m.toSquare() == move.toSquare() && (!m.isPromotion() || m.promotedTo() == move.promotedTo()))
+      return true;
+  }
+  return false;
+}
+// -------------------------------------------------------------------------------------------------
+std::string Board::moveToSan(Move const& move)
+{
+  return to_string(move.fromSquare()) + to_string(move.toSquare());
+}
+// -------------------------------------------------------------------------------------------------
+Move Board::sanToMove(std::string_view move)
+{
+  using namespace std::literals;
+
+  auto sanGetPieceType = [](char c) {
+    c = std::tolower(c);
+    switch (c) {
+      // clang-format off
+      case 'q': return Piece::Queen;
+      case 'r': return Piece::Rook; 
+      case 'n': return Piece::Knight; 
+      case 'b': return Piece::Bishop;
+      case 'k': return Piece::King;
+      // clang-format on
+      default:
+        return Piece::None;
+    }
+  };
+
+  if (stringEndsWith(move, "e.p."sv)) {
+    stringPop(move, 4);
+  }
+
+  if (stringEndsWith(move, "#"sv) || stringEndsWith(move, "+"sv)) {
+    stringPop(move, 1);
+  }
+
+  if (move == "O-O-O"sv || move == "0-0-0"sv) {
+    return Move::makeCastling(CastleSide::Queen);
+  } else if (move == "O-O"sv || move == "0-0"sv) {
+    return Move::makeCastling(CastleSide::King);
+  }
+
+  auto promotedTo = Piece::None;
+
+  // If the last letter is not a digit, this is a promotion and it indicates
+  // the promoted-to piece
+  if (!std::isdigit(move.back())) {
+    promotedTo = sanGetPieceType(stringPopBack(move));
+
+    if (promotedTo == Piece::None) {
+      throw std::runtime_error("Malformed SAN move: " + std::string(move));
+    }
+    if (move.back() == '=') {
+      stringPop(move, 1);
+    }
+  }
+
+  auto const toRank = stringPopBack(move);
+  auto const toFile = stringPopBack(move);
+
+  if (!std::isalpha(toFile)) {
+    throw std::runtime_error("Malformed SAN move: " + std::string(move));
+  }
+
+  auto const toSquare = makeSquare(File(toFile - 'a'), Rank(toRank - '1'));
+
+  if (move.size() == 0) {
+    // Try to find a source square for this pawn move
+    // We know this to not be a capture so there can be at most 1 pawn that can move to
+    // the target square
+    auto const result = findMoveIf([toSquare](Move const& m) {
+      if (m.toSquare() == toSquare && getFile(m.fromSquare()) == getFile(toSquare)) {
+        return true;
+      }
+      return false;
+    });
+
+    if (!result.has_value()) {
+      throw std::runtime_error("Invalid SAN move");
+    }
+
+    if (promotedTo != Piece::None)
+      return Move::makePromotion(result->fromSquare(), toSquare, promotedTo);
+
+    return Move::makeMove(result->fromSquare(), toSquare);
+  }
+
+  bool isCapture = move.back() == 'x';
+
+  if (isCapture) {
+    stringPop(move, 1);
+  }
+
+  auto fromFile = File::None;
+  auto fromRank = Rank::None;
+
+  // Check if a rank number was provided
+  if (std::isdigit(move.back())) {
+    fromRank = Rank(stringPopBack(move) - '1');
+  }
+
+  // If it's a lower case letter, then it's a file
+  if (std::islower(move.back())) {
+    fromFile = File(stringPopBack(move) - 'a');
+
+    // If there are no more letters, it's a pawn move
+    // find the source square and return it
+    if (move.size() == 0) {
+      auto const result = findMoveIf([toSquare, fromFile](Move const& m) {
+        if (m.toSquare() == toSquare && getFile(m.fromSquare()) == fromFile) {
+          return true;
+        }
+        return false;
+      });
+
+      if (!result.has_value()) {
+        throw std::runtime_error("Invalid SAN move");
+      }
+
+      if (isCapture && toSquare == getEnPassantSquare()) {
+        return Move::makeEnPassant(result->fromSquare(), toSquare);
+      }
+
+      return Move::makeMove(result->fromSquare(), toSquare);
+    }
+  }
+
+  CG_ASSERT(std::isupper(move.back()));
+
+  auto const piece = sanGetPieceType(stringPopBack(move));
+
+  CG_ASSERT(move.size() == 0);
+
+  if (fromRank == Rank::None || fromFile == File::None) {
+    auto const result = findMoveIf([&](Move const& m) {
+      if (m.toSquare() == toSquare) {
+        if (getPieceOn(m.fromSquare()) == piece) {
+          if ((fromRank == Rank::None && fromFile == File::None) ||
+              getRank(m.fromSquare()) == fromRank || getFile(m.fromSquare()) == fromFile) {
+            return true;
+          }
+        }
+      }
+      return false;
+    });
+
+    if (!result.has_value()) {
+      throw std::runtime_error("Invalid SAN move");
+    }
+
+    return Move::makeMove(result->fromSquare(), toSquare);
+  }
+
+  return Move::makeMove(makeSquare(fromFile, fromRank), toSquare);
+}
+// -------------------------------------------------------------------------------------------------
+bool Board::makeMove(Move const& move)
+{
+  if (!isMoveLegal(move)) {
+    return false;
+  }
+
+  auto const us     = getActivePlayer();
+  auto const behind = us == Color::White ? Direction::South : Direction::North;
+  auto const them   = ~us;
+  auto const from   = move.fromSquare();
+  auto const to     = move.toSquare();
+
+  if (!move.isCastling()) {
+    CG_ASSERT(from != Square::None);
+    CG_ASSERT(to != Square::None);
+    CG_ASSERT(getColorOfPieceOn(from) == us);
+    CG_ASSERT(isSquareEmpty(to) || getColorOfPieceOn(to) == them);
+  }
+
+  mEnPassant.clear();
+
+  if (move.isCastling()) {
+    auto const kingside = move.getCastleSide() == CastleSide::King;
+    auto const kingFrom = getKingSquare(us);
+    auto const rookFrom = getCastlingRookSquare(us, move.getCastleSide());
+
+    auto const rookTo = [&] {
+      if (us == Color::White)
+        return kingside ? Square::F1 : Square::D1;
+      else
+        return kingside ? Square::F8 : Square::D8;
+    }();
+
+    auto const kingTo = [&] {
+      if (us == Color::White)
+        return kingside ? Square::G1 : Square::C1;
+      else
+        return kingside ? Square::G8 : Square::C8;
+    }();
+
+    removePiece(Piece::Rook, us, rookFrom);
+    removePiece(Piece::King, us, kingFrom);
+    addPiece(Piece::Rook, us, rookTo);
+    addPiece(Piece::King, us, kingTo);
+
+    mCastleRights[us] = CastleSide::None;
+  } else {
+    auto captured = move.isEnPassant() ? Piece::Pawn : getPieceOn(to);
+
+    if (captured != Piece::None) {
+      mHalfMoves = 0;  // Reset fifty-move counter on captures
+      if (move.isEnPassant())
+        removePiece(captured, them, to + behind);
+      else
+        removePiece(captured, them, to);
+    }
+
+    movePiece(getPieceOn(from), us, from, to);
+  }
+
+  if (move.isPromotion()) {
+    removePiece(Piece::Pawn, us, to);
+    addPiece(move.promotedTo(), us, to);
+  }
+
+  if (us == Color::Black) ++mFullMove;
+
+  mTurn = ~mTurn;
+  return true;
+}
+// -------------------------------------------------------------------------------------------------
+bool Board::makeMove(std::string_view move) { return makeMove(sanToMove(move)); }
+// -------------------------------------------------------------------------------------------------
 int Board::getHalfMoves() const { return mHalfMoves; }
 // -------------------------------------------------------------------------------------------------
 int Board::getFullMove() const { return mFullMove; }
@@ -298,6 +550,8 @@ bool Board::isInsufficientMaterial() const
 }
 // -------------------------------------------------------------------------------------------------
 Color Board::getActivePlayer() const { return mTurn; }
+// -------------------------------------------------------------------------------------------------
+bool Board::isMate() const { return getLegalMoves().size() == 0; }
 // -------------------------------------------------------------------------------------------------
 bool Board::isInCheck() const
 {
@@ -464,6 +718,16 @@ Piece Board::getPieceOn(Square sq) const
   return Piece::None;
 }
 // -------------------------------------------------------------------------------------------------
+Color Board::getColorOfPieceOn(Square sq) const
+{
+  if (getAllPieces(Color::White) & sq)
+    return Color::White;
+  else
+    return Color::Black;
+}
+// -------------------------------------------------------------------------------------------------
+bool Board::isSquareEmpty(Square sq) const { return !(getOccupied() & sq); }
+// -------------------------------------------------------------------------------------------------
 Bitboard Board::getCheckSquares(Color color, Piece piece) const
 {
   if (piece == Piece::King) return Bitboard{};
@@ -502,102 +766,6 @@ Square Board::getCastlingRookSquare(Color color, CastleSide side) const
 }
 // -------------------------------------------------------------------------------------------------
 Square Board::getEnPassantSquare() const { return makeSquare(mEnPassant.bsf()); }
-// -------------------------------------------------------------------------------------------------
-bool Board::isMoveLegal(Move const& move) const
-{
-  for (auto&& m : getLegalMoves()) {
-    if (m.getType() == move.getType() && m.fromSquare() == move.fromSquare() &&
-        m.toSquare() == move.toSquare() && (!m.isPromotion() || m.promotedTo() == move.promotedTo()))
-      return true;
-  }
-  return false;
-}
-// -------------------------------------------------------------------------------------------------
-std::vector<Move> const& Board::getLegalMoves() const
-{
-  if (mBoardChanged) {
-    auto lock = std::unique_lock{mMovesMutex};
-    if (mBoardChanged) {
-      mLegalMoves   = generateMoves<GenType::Legal>(*this);
-      mBoardChanged = false;
-    }
-  }
-
-  return mLegalMoves;
-}
-// -------------------------------------------------------------------------------------------------
-bool Board::makeMove(Move const& move, bool performLegalityCheck)
-{
-  if (performLegalityCheck && !isMoveLegal(move)) {
-    return false;
-  }
-
-  auto const us     = getActivePlayer();
-  auto const behind = us == Color::White ? Direction::South : Direction::North;
-  auto const them   = ~us;
-  auto const from   = move.fromSquare();
-  auto const to     = move.toSquare();
-
-  if (!(getAllPieces(us) & from)) {
-    CG_ASSERT(false);
-    return false;
-  }
-
-  if (!move.isCastling() && (getPieceOn(to) != Piece::None && !(getAllPieces(them) & to))) {
-    CG_ASSERT(false);
-    return false;
-  }
-
-  mEnPassant.clear();
-
-  if (move.isCastling()) {
-    auto const kingside = to > from;
-    auto const rookFrom = to;
-
-    auto const rookTo = [&] {
-      if (us == Color::White)
-        return kingside ? Square::F1 : Square::D1;
-      else
-        return kingside ? Square::F8 : Square::D8;
-    }();
-
-    auto const kingTo = [&] {
-      if (us == Color::White)
-        return kingside ? Square::G1 : Square::C1;
-      else
-        return kingside ? Square::G8 : Square::C8;
-    }();
-
-    removePiece(Piece::Rook, us, rookFrom);
-    removePiece(Piece::King, us, from);
-    addPiece(Piece::Rook, us, rookTo);
-    addPiece(Piece::King, us, kingTo);
-
-    mCastleRights[us] = CastleSide::None;
-  } else {
-    auto captured = move.isEnPassant() ? Piece::Pawn : getPieceOn(to);
-
-    if (captured != Piece::None) {
-      mHalfMoves = 0;  // Reset fifty-move counter on captures
-      if (move.isEnPassant())
-        removePiece(captured, them, to + behind);
-      else
-        removePiece(captured, them, to);
-    }
-
-    movePiece(getPieceOn(from), us, from, to);
-  }
-
-  if (move.isPromotion()) {
-    removePiece(Piece::Pawn, us, to);
-    addPiece(move.promotedTo(), us, to);
-  }
-
-  if (us == Color::Black) ++mFullMove;
-
-  mTurn = ~mTurn;
-  return true;
-}
 // -------------------------------------------------------------------------------------------------
 void Board::addPiece(Piece type, Color color, Square square)
 {

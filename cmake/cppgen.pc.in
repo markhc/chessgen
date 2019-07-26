@@ -1,0 +1,10 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=@CMAKE_INSTALL_PREFIX@
+libdir=@CMAKE_INSTALL_FULL_LIBDIR@
+includedir=@CMAKE_INSTALL_FULL_INCLUDEDIR@
+
+Name: cppgen
+Description: A chess move generator and validator written in modern C++
+Version: @CPPGEN_VERSION@
+Libs: -L${libdir} -lcppgen
+Cflags: -I${includedir}

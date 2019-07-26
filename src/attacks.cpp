@@ -273,7 +273,7 @@ Bitboard getRookAttacksSlow(int square, Bitboard blockers)
     auto       attacks        = getRayForSquare(d, square);
     auto const maskedBlockers = attacks & blockers;
     if (maskedBlockers) {
-      attacks &= ~getRayForSquare(d, ((maskedBlockers).*f)());
+      attacks &= ~getRayForSquare(d, (maskedBlockers.*f)());
     }
     return attacks;
   };
@@ -294,7 +294,7 @@ Bitboard getBishopAttacksSlow(int square, Bitboard blockers)
     auto       attacks        = getRayForSquare(d, square);
     auto const maskedBlockers = attacks & blockers;
     if (maskedBlockers) {
-      attacks &= ~getRayForSquare(d, ((maskedBlockers).*f)());
+      attacks &= ~getRayForSquare(d, (maskedBlockers.*f)());
     }
     return attacks;
   };

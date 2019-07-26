@@ -2,7 +2,6 @@
 
 #include <string_view>
 
-#include "exceptions.hpp"
 #include "types.hpp"
 
 namespace cppgen
@@ -18,8 +17,9 @@ public:
   };
 
 private:
+  Move(CastleSide side);
   Move(Square from, Square to, Type type);
-  Move(Square from, Square to, Piece promoted);
+  Move(Square from, Square to, Piece promotedTo);
 
 public:
   Move();
@@ -27,15 +27,16 @@ public:
   static Move makeMove(Square from, Square to);
   static Move makePromotion(Square from, Square to, Piece promotedTo);
   static Move makeEnPassant(Square from, Square to);
-  static Move makeCastling(Square from, Square to);
+  static Move makeCastling(CastleSide side);
 
-  Type   getType() const;
-  Square fromSquare() const;
-  Square toSquare() const;
-  bool   isPromotion() const;
-  bool   isCastling() const;
-  bool   isEnPassant() const;
-  Piece  promotedTo() const;
+  Type       getType() const;
+  Square     fromSquare() const;
+  Square     toSquare() const;
+  bool       isPromotion() const;
+  bool       isCastling() const;
+  CastleSide getCastleSide() const;
+  bool       isEnPassant() const;
+  Piece      promotedTo() const;
 
   static int notationToIndex(std::string_view notation)
   {
@@ -44,9 +45,10 @@ public:
   static std::string indexToNotation(int index) { return to_string(Square(index)); }
 
 private:
-  Type   mType{Type::Normal};
-  Piece  mPromotedTo{};
-  Square mFromSquare{};
-  Square mToSquare{};
+  Type       mType{Type::Normal};
+  Square     mFromSquare{Square::None};
+  Square     mToSquare{Square::None};
+  Piece      mPromotedTo{Piece::None};
+  CastleSide mCastleSide{CastleSide::None};
 };
 }  // namespace cppgen

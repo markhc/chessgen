@@ -50,6 +50,11 @@ bool legalityCheck(Board const& board, Move const& move)
              (board.getPieces(~us, Piece::Queen) | board.getPieces(~us, Piece::Bishop)));
   }
 
+  // Castling moves already already checked for legality
+  if (move.isCastling()) {
+    return true;
+  }
+
   // If the moving piece is a king, check whether the destination square is
   // attacked by the opponent.
   if (ksq == from) {
@@ -437,11 +442,13 @@ void generateAll(Board const& board, Bitboard target, std::vector<Move>& moves)
     }
 
     if constexpr (Type != GenType::Captures) {
-      if (board.canLongCastle(Us))
-        moves.emplace_back(Move::makeCastling(ksq, board.getCastlingRookSquare(Us, CastleSide::Queen)));
+      if (board.canLongCastle(Us)) {
+        moves.emplace_back(Move::makeCastling(CastleSide::Queen));
+      }
 
-      if (board.canShortCastle(Us))
-        moves.emplace_back(Move::makeCastling(ksq, board.getCastlingRookSquare(Us, CastleSide::King)));
+      if (board.canShortCastle(Us)) {
+        moves.emplace_back(Move::makeCastling(CastleSide::King));
+      }
     }
   }
 }

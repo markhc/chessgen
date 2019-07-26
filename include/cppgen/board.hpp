@@ -2,7 +2,9 @@
 
 #include <atomic>
 #include <mutex>
+#include <optional>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include "bitboard.hpp"
@@ -11,12 +13,6 @@
 
 namespace cppgen
 {
-enum CastleSide {
-  None  = (0),       ///< Players cannot castle
-  King  = (1 << 0),  ///< White can castle on the king side
-  Queen = (1 << 1),  ///< Black can castle on the king side
-};
-
 CPPGEN_ENUMOPS(CastleSide)
 
 class Board
@@ -55,30 +51,46 @@ public:
   std::string prettyPrint(bool useUnicodeChars = true) const;
 
   /**
+   * @brief Gets the list of all legal moves for the current board position
+   */
+  std::vector<Move> const& getLegalMoves() const;
+
+  /**
+   * @brief Checks whether the given move is legal
+   */
+  bool isMoveLegal(Move const& move) const;
+
+  /**
+   * @brief Gets the Standard Algebraic Notation string for a valid move.
+   *
+   * @param move The move to get the SAN representation for
+   */
+  std::string moveToSan(Move const& move);
+
+  /**
+   * @brief Turns a SAN move into its corresponding @c Move
+   *
+   * @param move The SAN move
+   */
+  Move sanToMove(std::string_view move);
+
+  /**
    * @brief Plays a move, changing the current board position
    *
-   * If @c performLegalityCheck is set to @c false and @c move is an illegal move, the behavior of
-   * this function is undefined (anything can happen)
-   *
-   * @param move                 The move to play
-   * @param performLegalityCheck Whether to check the move for legality
+   * @param move The move to play
    *
    * @returns @c true if the move was played, @c false otherwise
    */
-  bool makeMove(Move const& move, bool performLegalityCheck = false);
+  bool makeMove(Move const& move);
 
   /**
    * @brief Plays a move in the Standard Algebraic Notation form
    *
-   * If @c performLegalityCheck is set to @c false and @c move is an illegal move, the behavior of
-   * this function is undefined (anything can happen)
-   *
-   * @param move                 The move to play
-   * @param performLegalityCheck Whether the move was already checked for legality
+   * @param move The move to play
    *
    * @returns @c true if the move was played, @c false otherwise
    */
-  bool makeMove(std::string_view move, bool performLegalityCheck = true);
+  bool makeMove(std::string_view move);
 
   /**
    * @brief Gets the number of halfmoves since the last capture or pawn move
@@ -113,6 +125,11 @@ public:
    * @brief Gets the current active player
    */
   Color getActivePlayer() const;
+
+  /**
+   * @brief Checks whether the board is in a checkmate position
+   */
+  bool isMate() const;
 
   /**
    * @brief Checks whether the active player is in check
@@ -201,6 +218,24 @@ public:
   Piece getPieceOn(Square sq) const;
 
   /**
+   * @brief Gets the color of the piece on the given suqare
+   *
+   * @param sq The square
+   *
+   * @returns The piece color
+   */
+  Color getColorOfPieceOn(Square sq) const;
+
+  /**
+   * @brief Check if the given square is unoccupied
+   *
+   * @param sq The square to check
+   *
+   * @returns @c true if the square has no piece on it
+   */
+  bool isSquareEmpty(Square sq) const;
+
+  /**
    * @brief Retrives a bitboard with all the squares where the given piece can check the enemy king
    *        from considering the current board position
    *
@@ -247,22 +282,23 @@ public:
   Square getEnPassantSquare() const;
 
   /**
-   * @brief Checks whether the given move is legal
-   */
-  bool isMoveLegal(Move const& move) const;
-
-  /**
-   * @brief Gets the list of all legal moves for the current board position
-   */
-  std::vector<Move> const& getLegalMoves() const;
-
-  /**
    * @brief Determines if the given square is under attack by the given color.
    *
    * @param enemy   The attacking side
    * @param square  The square index
    */
   bool isSquareUnderAttack(Color enemy, Square square) const;
+
+  template <typename Fn>
+  auto findMoveIf(Fn f) -> std::optional<Move>
+  {
+    for (auto&& move : getLegalMoves()) {
+      if (f(move)) {
+        return move;
+      }
+    }
+    return std::nullopt;
+  }
 
 private:
   void addPiece(Piece type, Color color, Square square);
