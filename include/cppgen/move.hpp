@@ -42,7 +42,7 @@ public:
   {
     return static_cast<int>(makeSquare(File(notation[0] - 'a'), Rank(notation[1] - '1')));
   }
-  static std::string indexToNotation(int index) { return to_string(Square(index)); }
+  static std::string indexToNotation(int index) { return std::to_string(Square(index)); }
 
 private:
   Type       mType{Type::Normal};

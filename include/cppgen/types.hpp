@@ -13,6 +13,8 @@ enum class CastleSide {
   Queen = (1 << 1),  ///< Black can castle on the king side
 };
 
+CPPGEN_ENUMOPS(CastleSide)
+
 enum class Direction {
   North,
   South,
@@ -200,15 +202,6 @@ constexpr inline Color operator~(Color c)
 {
   return c == Color::White ? Color::Black : Color::White;
 }
-inline std::string to_string(Rank r)
-{
-  return std::string{static_cast<char>(static_cast<int>(r) + 1 + '0')};
-}
-inline std::string to_string(File f)
-{
-  return std::string{static_cast<char>(static_cast<int>(f) + 'a')};
-}
-inline std::string to_string(Square s) { return to_string(getFile(s)) + to_string(getRank(s)); }
 template <Color color = Color::White>
 inline std::string to_string(Piece p)
 {
@@ -257,3 +250,17 @@ constexpr int makeIndex(E e)
   return static_cast<int>(e);
 }
 }  // namespace cppgen
+
+namespace std
+{
+inline string to_string(cppgen::Rank r)
+{
+  return string{static_cast<char>(static_cast<int>(r) + 1 + '0')};
+}
+inline string to_string(cppgen::File f)
+{
+  return string{static_cast<char>(static_cast<int>(f) + 'a')};
+}
+inline string to_string(cppgen::Square s) { return to_string(getFile(s)) + to_string(getRank(s)); }
+inline string to_string(cppgen::Color c) { return c == cppgen::Color::White ? "White" : "Black"; }
+}  // namespace std

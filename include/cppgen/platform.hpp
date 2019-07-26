@@ -1,5 +1,7 @@
 #pragma once
 
+#include "config.hpp"
+
 #if defined(__GNUC__) || defined(__GNUG__)
 /**
  * Clang/LLVM.

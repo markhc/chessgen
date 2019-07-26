@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <atomic>
 #include <mutex>
 #include <optional>
@@ -13,10 +14,21 @@
 
 namespace cppgen
 {
-CPPGEN_ENUMOPS(CastleSide)
-
+enum class GameOverReason {
+  OnGoing,
+  Mate,
+  Threefold,
+  Stalemate,
+  InsuffMaterial,
+};
 class Board
 {
+public:
+  Board(Board const&);
+  Board(Board&&);
+  Board& operator=(Board const&);
+  Board& operator=(Board&&);
+
 public:
   /**
    * @brief Constructs a board in the default initial position
@@ -56,6 +68,12 @@ public:
   std::vector<Move> const& getLegalMoves() const;
 
   /**
+   * @brief Gets the list of all legal moves for the current board position in their Algebraic
+   * representation
+   */
+  std::vector<std::string> getLegalMovesAsSAN() const;
+
+  /**
    * @brief Gets the list of all legal moves from the given square
    */
   std::vector<Move> getLegalMovesForSquare(Square square) const;
@@ -63,21 +81,10 @@ public:
   /**
    * @brief Checks whether the given move is legal
    */
-  bool isMoveLegal(Move const& move) const;
-
-  /**
-   * @brief Gets the Standard Algebraic Notation string for a valid move.
-   *
-   * @param move The move to get the SAN representation for
-   */
-  std::string moveToSan(Move const& move);
-
-  /**
-   * @brief Turns a SAN move into its corresponding @c Move
-   *
-   * @param move The SAN move
-   */
-  Move sanToMove(std::string_view move);
+  bool isValid(std::string_view move) const;
+  bool isValid(Square from, Square to) const;
+  bool isValid(CastleSide castle) const;
+  bool isValid(Move const& move) const;
 
   /**
    * @brief Plays a move, changing the current board position
@@ -96,6 +103,13 @@ public:
    * @returns @c true if the move was played, @c false otherwise
    */
   bool makeMove(std::string_view move);
+
+  /**
+   * @brief Gets the Standard Algebraic Notation string for a valid move.
+   *
+   * @param move The move to get the SAN representation for
+   */
+  std::string toSAN(Move const& move) const;
 
   /**
    * @brief Gets the number of halfmoves since the last capture or pawn move
@@ -122,11 +136,6 @@ public:
   bool isInitialPosition() const;
 
   /**
-   * @brief Detect whether the board is drawn by insufficient material
-   */
-  bool isInsufficientMaterial() const;
-
-  /**
    * @brief Gets the current active player
    */
   Color getActivePlayer() const;
@@ -134,7 +143,12 @@ public:
   /**
    * @brief Checks whether the board is in a checkmate position
    */
-  bool isMate() const;
+  bool isOver() const;
+
+  /**
+   * @brief Determines how the game ended
+   */
+  GameOverReason getGameOverReason() const;
 
   /**
    * @brief Checks whether the active player is in check
@@ -294,8 +308,25 @@ public:
    */
   bool isSquareUnderAttack(Color enemy, Square square) const;
 
+private:
+  Move fromSAN(std::string_view move) const;
+  bool isInsufficientMaterial() const;
+  bool isThreefold() const;
+  bool isStalemate() const;
+  bool isCheckmate() const;
+  void gameOverCheck();
+
+  bool isMoveCheck(Move const& move) const;
+  bool isMoveMate(Move const& move) const;
+
+  void addPiece(Piece type, Color color, Square square);
+  void removePiece(Piece type, Color color, Square square);
+  void movePiece(Piece type, Color color, Square from, Square to);
+  void clearBitboards();
+  void updateBitboards();
+
   template <typename Fn>
-  auto findMoveIf(Fn f) -> std::optional<Move>
+  auto findMoveIf(Fn f) const -> std::optional<Move>
   {
     for (auto&& move : getLegalMoves()) {
       if (f(move)) {
@@ -304,14 +335,7 @@ public:
     }
     return std::nullopt;
   }
-
-private:
-  void addPiece(Piece type, Color color, Square square);
-  void removePiece(Piece type, Color color, Square square);
-  void movePiece(Piece type, Color color, Square from, Square to);
-  void clearBitboards();
-  void updateBitboards();
-
+  Bitboard getAttackers(Color color, Square square) const;
   Bitboard getWhitePawnAttacksForSquare(Square square) const;
   Bitboard getBlackPawnAttacksForSquare(Square square) const;
   Bitboard getKingAttacksForSquare(Square square, Color color) const;
@@ -320,16 +344,17 @@ private:
   Bitboard getRookAttacksForSquare(Square square, Color color) const;
   Bitboard getQueenAttacksForSquare(Square square, Color color) const;
 
-  Bitboard                  mPieces[2][6]{};
-  Bitboard                  mAllPieces[2]{};
-  Bitboard                  mOccupied{};
-  Bitboard                  mEnPassant{};
-  Color                     mTurn{};
-  int                       mHalfMoves{};
-  int                       mFullMove{};
-  CastleSide                mCastleRights[2]{};
-  mutable std::vector<Move> mLegalMoves;
-  mutable std::atomic_bool  mBoardChanged{true};
-  mutable std::mutex        mMovesMutex{};
+  std::array<std::array<Bitboard, 6>, 2> mPieces{};
+  std::array<Bitboard, 2>                mAllPieces{};
+  Bitboard                               mOccupied{};
+  Bitboard                               mEnPassant{};
+  Color                                  mTurn{Color::White};
+  int                                    mHalfMoves{0};
+  int                                    mFullMove{1};
+  std::array<CastleSide, 2>              mCastleRights{};
+  GameOverReason                         mReason{GameOverReason::OnGoing};
+  mutable std::vector<Move>              mLegalMoves;
+  mutable std::atomic_bool               mBoardChanged{true};
+  mutable std::mutex                     mMovesMutex{};
 };
 }  // namespace cppgen

@@ -6,6 +6,8 @@ AlignConsecutiveAssignments: 'true'
 AlignConsecutiveDeclarations: 'true'
 AlignEscapedNewlines: Right
 AlignOperands: 'true'
+AllowShortBlocksOnASingleLine: 'false'
+AllowShortFunctionsOnASingleLine: 'false'
 AllowAllParametersOfDeclarationOnNextLine: 'false'
 BinPackArguments: 'false'
 BinPackParameters: 'false'

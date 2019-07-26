@@ -71,7 +71,10 @@ Game pgn_moves_to_game(std::string_view pgn)
 // -------------------------------------------------------------------------------------------------
 void play_full_game(Game game)
 {
-  cppgen::Board board;
+  using cppgen::Board;
+  using cppgen::GameOverReason;
+
+  Board board;
 
   ASSERT_TRUE(board.isInitialPosition());
   for (auto&& move : game.moves) {
@@ -79,7 +82,7 @@ void play_full_game(Game game)
     if (move.find('+') != std::string_view::npos) {
       EXPECT_TRUE(board.isInCheck());
     } else if (move.find('#') != std::string_view::npos) {
-      EXPECT_TRUE(board.isMate());
+      EXPECT_EQ(board.getGameOverReason(), GameOverReason::Mate);
     }
   }
 

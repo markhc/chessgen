@@ -71,8 +71,14 @@ static constexpr Bitboard moveEast(Bitboard bb, int n)
 class Rays
 {
 public:
-  auto&       operator[](Direction d) { return mRays[makeIndex(d)]; }
-  auto const& operator[](Direction d) const { return mRays[makeIndex(d)]; }
+  auto& operator[](Direction d)
+  {
+    return mRays[makeIndex(d)];
+  }
+  auto const& operator[](Direction d) const
+  {
+    return mRays[makeIndex(d)];
+  }
 
 private:
   Bitboard mRays[makeIndex(Direction::Count)][64];
@@ -100,7 +106,10 @@ static Bitboard getBishopAttacksSlow(int square, Bitboard blockers);
 static Bitboard getRookAttacks(int square, Bitboard blockers);
 static Bitboard getBishopAttacks(int square, Bitboard blockers);
 static Bitboard getBlockersFromIndex(int index, Bitboard blockerMask);
-static Bitboard getRayForSquare(Direction d, int square) { return _rays[d][square]; }
+static Bitboard getRayForSquare(Direction d, int square)
+{
+  return _rays[d][square];
+}
 
 // -------------------------------------------------------------------------------------------------
 void precomputeTables()
@@ -149,7 +158,10 @@ void precomputeRays()
 }
 
 // -------------------------------------------------------------------------------------------------
-Bitboard getLineBetween(Square s1, Square s2) { return _libeBBs[makeIndex(s1)][makeIndex(s2)]; }
+Bitboard getLineBetween(Square s1, Square s2)
+{
+  return _libeBBs[makeIndex(s1)][makeIndex(s2)];
+}
 // -------------------------------------------------------------------------------------------------
 Bitboard getNonSlidingAttacks(Piece piece, Square from, Color color)
 {
