@@ -10,7 +10,7 @@ set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
 message(STATUS "Version: ${CPPGEN_VERSION}")
 
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set(CPPGEN_COMPILER_FLAGS 
     # Enable "all" warnings
     -Wall -Wextra -Weverything -Wpedantic
@@ -30,7 +30,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     -Wno-extra-semi
     -Wno-undefined-func-template
   )
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
   set(CPPGEN_COMPILER_FLAGS
     # Enable "all" warnings
     -Wall -Wextra -pedantic 
@@ -50,9 +50,9 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     -Wno-weak-vtables
     -Wno-covered-switch-default
   )
-else()
-  # using an unsupported compiler
-endif()
+elseif (MSVC)
+  set(CPPGEN_COMPILER_FLAGS /W3)
+endif ()
 
 function(add_headers VAR)
   set(headers ${${VAR}})
@@ -74,10 +74,6 @@ add_headers(CPPGEN_HEADERS
             attacks.hpp bitboard.hpp board.hpp 
             config.hpp helpers.hpp move.hpp 
             movegen.hpp platform.hpp types.hpp)
-
-#add_sources(CPPGEN_SOURCES 
-#            attacks.cpp bitboard.cpp board.cpp 
-#            move.cpp movegen.cpp)
 
 add_library(cppgen src/attacks.cpp src/bitboard.cpp src/board.cpp src/move.cpp src/movegen.cpp)
 add_library(cppgen::cppgen ALIAS cppgen)
