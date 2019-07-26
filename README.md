@@ -63,7 +63,8 @@ Output of the above code would be something like:
 25. Kxh4 Qf6
 26. Be5 Bd7
 27. Rf1 Qxg5#
-Black has won!```
+Black has won!
+```
 
 You can also give a FEN string to `Board`'s constructor to start the board at any other valid position:
 
