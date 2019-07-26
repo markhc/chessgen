@@ -39,33 +39,60 @@ public:
   constexpr Bitboard shiftTowards(Direction d) const;
   std::string        prettyPrint() const;
 
-  constexpr std::uint64_t getBits() const { return bits; }
-  constexpr bool          isZero() const { return bits == 0; }
-  constexpr void          clear() { bits = 0; }
-  constexpr void          setBit(int index) { bits |= 1ULL << index; }
-  constexpr void          clearBit(int index) { bits &= ~(1ULL << index); }
-  constexpr void          setBit(Square s) { bits |= 1ULL << makeIndex(s); }
-  constexpr void          clearBit(Square s) { bits &= ~(1ULL << makeIndex(s)); }
-  constexpr bool          moreThanOne() const { return bits & (bits - 1); }
-  constexpr int           popCount() const { return __builtin_popcountll(bits); }
+  constexpr std::uint64_t getBits() const
+  {
+    return bits;
+  }
+  constexpr bool isZero() const
+  {
+    return bits == 0;
+  }
+  constexpr void clear()
+  {
+    bits = 0;
+  }
+  constexpr void setBit(int index)
+  {
+    bits |= 1ULL << index;
+  }
+  constexpr void clearBit(int index)
+  {
+    bits &= ~(1ULL << index);
+  }
+  constexpr void setBit(Square s)
+  {
+    bits |= 1ULL << makeIndex(s);
+  }
+  constexpr void clearBit(Square s)
+  {
+    bits &= ~(1ULL << makeIndex(s));
+  }
+  constexpr bool moreThanOne() const
+  {
+    return bits & (bits - 1);
+  }
+  constexpr int popCount() const
+  {
+    return intrin_popcount(bits);
+  }
 
   constexpr int bsf() const
   {
     if (isZero()) {
       return -1;
     }
-    return __builtin_ffsll(bits) - 1;
+    return intrin_forward_scan(bits) - 1;
   }
   constexpr int bsr() const
   {
     if (isZero()) {
       return -1;
     }
-    return 63 - __builtin_clzll(bits);
+    return 63 - intrin_reverse_scan(bits);
   }
   constexpr int popLsb()
   {
-    int lsbIndex = __builtin_ffsll(bits) - 1;
+    int lsbIndex = intrin_forward_scan(bits) - 1;
     bits &= bits - 1;
     return lsbIndex;
   }
@@ -74,24 +101,76 @@ private:
   std::uint64_t bits;
 };
 
-constexpr Bitboard::Bitboard() : bits(0) {}
-constexpr Bitboard::Bitboard(std::uint64_t bb) : bits(bb) {}
-constexpr Bitboard::operator bool() const { return bits != 0; }
-constexpr Bitboard& Bitboard::operator<<=(std::uint32_t n) { return (*this = *this << n); }
-constexpr Bitboard& Bitboard::operator>>=(std::uint32_t n) { return (*this = *this >> n); }
-constexpr Bitboard& Bitboard::operator&=(Bitboard b) { return (*this = *this & b); }
-constexpr Bitboard& Bitboard::operator|=(Bitboard b) { return (*this = *this | b); }
-constexpr Bitboard& Bitboard::operator^=(Bitboard b) { return (*this = *this ^ b); }
-constexpr Bitboard& Bitboard::operator&=(Square s) { return (*this = *this & s); }
-constexpr Bitboard& Bitboard::operator|=(Square s) { return (*this = *this | s); }
-constexpr Bitboard& Bitboard::operator^=(Square s) { return (*this = *this ^ s); }
-constexpr Bitboard operator<<(Bitboard bb, std::uint32_t n) { return Bitboard{bb.bits << n}; }
-constexpr Bitboard operator>>(Bitboard bb, std::uint32_t n) { return Bitboard{bb.bits >> n}; }
-constexpr Bitboard operator&(Bitboard a, Bitboard b) { return Bitboard{a.bits & b.bits}; }
-constexpr Bitboard operator|(Bitboard a, Bitboard b) { return Bitboard{a.bits | b.bits}; }
-constexpr Bitboard operator^(Bitboard a, Bitboard b) { return Bitboard{a.bits ^ b.bits}; }
-constexpr Bitboard operator~(Bitboard a) { return Bitboard{~a.bits}; }
-constexpr Bitboard operator*(Bitboard b, std::uint64_t m) { return Bitboard{b.bits * m}; }
+constexpr Bitboard::Bitboard() : bits(0)
+{
+}
+constexpr Bitboard::Bitboard(std::uint64_t bb) : bits(bb)
+{
+}
+constexpr Bitboard::operator bool() const
+{
+  return bits != 0;
+}
+constexpr Bitboard& Bitboard::operator<<=(std::uint32_t n)
+{
+  return (*this = *this << n);
+}
+constexpr Bitboard& Bitboard::operator>>=(std::uint32_t n)
+{
+  return (*this = *this >> n);
+}
+constexpr Bitboard& Bitboard::operator&=(Bitboard b)
+{
+  return (*this = *this & b);
+}
+constexpr Bitboard& Bitboard::operator|=(Bitboard b)
+{
+  return (*this = *this | b);
+}
+constexpr Bitboard& Bitboard::operator^=(Bitboard b)
+{
+  return (*this = *this ^ b);
+}
+constexpr Bitboard& Bitboard::operator&=(Square s)
+{
+  return (*this = *this & s);
+}
+constexpr Bitboard& Bitboard::operator|=(Square s)
+{
+  return (*this = *this | s);
+}
+constexpr Bitboard& Bitboard::operator^=(Square s)
+{
+  return (*this = *this ^ s);
+}
+constexpr Bitboard operator<<(Bitboard bb, std::uint32_t n)
+{
+  return Bitboard{bb.bits << n};
+}
+constexpr Bitboard operator>>(Bitboard bb, std::uint32_t n)
+{
+  return Bitboard{bb.bits >> n};
+}
+constexpr Bitboard operator&(Bitboard a, Bitboard b)
+{
+  return Bitboard{a.bits & b.bits};
+}
+constexpr Bitboard operator|(Bitboard a, Bitboard b)
+{
+  return Bitboard{a.bits | b.bits};
+}
+constexpr Bitboard operator^(Bitboard a, Bitboard b)
+{
+  return Bitboard{a.bits ^ b.bits};
+}
+constexpr Bitboard operator~(Bitboard a)
+{
+  return Bitboard{~a.bits};
+}
+constexpr Bitboard operator*(Bitboard b, std::uint64_t m)
+{
+  return Bitboard{b.bits * m};
+}
 
 constexpr Bitboard SquareBB[64] = {
     Bitboard{1ULL << 0},  Bitboard{1ULL << 1},  Bitboard{1ULL << 2},  Bitboard{1ULL << 3},
@@ -112,9 +191,18 @@ constexpr Bitboard SquareBB[64] = {
     Bitboard{1ULL << 60}, Bitboard{1ULL << 61}, Bitboard{1ULL << 62}, Bitboard{1ULL << 63},
 };
 
-constexpr Bitboard operator&(Bitboard b, Square s) { return b & SquareBB[makeIndex(s)]; }
-constexpr Bitboard operator|(Bitboard b, Square s) { return b | SquareBB[makeIndex(s)]; }
-constexpr Bitboard operator^(Bitboard b, Square s) { return b ^ SquareBB[makeIndex(s)]; }
+constexpr Bitboard operator&(Bitboard b, Square s)
+{
+  return b & SquareBB[makeIndex(s)];
+}
+constexpr Bitboard operator|(Bitboard b, Square s)
+{
+  return b | SquareBB[makeIndex(s)];
+}
+constexpr Bitboard operator^(Bitboard b, Square s)
+{
+  return b ^ SquareBB[makeIndex(s)];
+}
 
 namespace Bitboards
 {

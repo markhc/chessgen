@@ -11,13 +11,25 @@
 #define intrin_popcount __builtin_popcountll
 #define intrin_forward_scan __builtin_ffsll
 #define intrin_reverse_scan __builtin_clzll
-#define intrin_count_leading_zeroes __builtin_clzll
-#define intrin_count_trailing_zeroes __builtin_ctzll
 #elif defined(_MSC_VER)
 /**
  * Microsoft Visual Studio
  */
-#error Sorry, MSVC is not supported yet.
+#include <intrin.h>
+
+#define intrin_popcount __popcnt64
+inline int intrin_forward_scan(unsigned long x)
+{
+  int i = 0;
+  _BitScanForward64(&i, x);
+  return i;
+}
+inline int intrin_reverse_scan(unsigned long x)
+{
+  int i = 0;
+  _BitScanReverse64(&i, x);
+  return i;
+}
 #else
 #error Sorry, this compiler is not supported.
 #endif
