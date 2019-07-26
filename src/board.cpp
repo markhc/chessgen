@@ -288,6 +288,21 @@ std::vector<Move> const& Board::getLegalMoves() const
   return mLegalMoves;
 }
 // -------------------------------------------------------------------------------------------------
+std::vector<Move> Board::getLegalMovesForSquare(Square square) const
+{
+  auto       result = std::vector<Move>{};
+  auto const ksq    = getKingSquare(getActivePlayer());
+
+  for (auto&& move : getLegalMoves()) {
+    if (move.fromSquare() == square) {
+      result.emplace_back(move);
+    } else if (square == ksq && move.isCastling()) {
+      result.emplace_back(move);
+    }
+  }
+  return result;
+}
+// -------------------------------------------------------------------------------------------------
 bool Board::isMoveLegal(Move const& move) const
 {
   for (auto&& m : getLegalMoves()) {

@@ -56,6 +56,11 @@ public:
   std::vector<Move> const& getLegalMoves() const;
 
   /**
+   * @brief Gets the list of all legal moves from the given square
+   */
+  std::vector<Move> getLegalMovesForSquare(Square square) const;
+
+  /**
    * @brief Checks whether the given move is legal
    */
   bool isMoveLegal(Move const& move) const;
