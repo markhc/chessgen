@@ -30,6 +30,7 @@ install:
       brew install cmake || brew upgrade cmake
     fi
   - cmake --version
+  - cd "${TRAVIS_BUILD_DIR}"
 
 script:
   - CXX=/usr/bin/g++-8 CC=/usr/bin/gcc-8 cmake -DCOVERAGE=1 .
