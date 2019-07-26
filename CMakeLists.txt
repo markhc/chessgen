@@ -1,14 +1,19 @@
 cmake_minimum_required(VERSION 3.13)
 
-option(CPPGEN_INSTALL "Generate the install target." ON)
-option(CPPGEN_TEST "Generate the test target." ON)
-
 project(cppgen CXX)
 
 set(CPPGEN_VERSION 1.0.0)
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
-message(STATUS "Version: ${CPPGEN_VERSION}")
+# Determine if fmt is built as a subproject (using add_subdirectory)
+# or if it is the master project.
+set(MASTER_PROJECT OFF)
+if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+  set(MASTER_PROJECT ON)
+endif()
+
+option(CPPGEN_INSTALL "Generate the install target." ${MASTER_PROJECT})
+option(CPPGEN_TEST "Generate the test target." ${MASTER_PROJECT})
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set(CPPGEN_COMPILER_FLAGS 
