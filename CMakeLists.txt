@@ -3,9 +3,10 @@ cmake_minimum_required(VERSION 3.13)
 option(CPPGEN_INSTALL "Generate the install target." ON)
 option(CPPGEN_TEST "Generate the test target." ON)
 
-set(CPPGEN_VERSION 1.0.0)
-
 project(cppgen CXX)
+
+set(CPPGEN_VERSION 1.0.0)
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
 message(STATUS "Version: ${CPPGEN_VERSION}")
 
@@ -53,8 +54,6 @@ else()
   # using an unsupported compiler
 endif()
 
-find_package(fmt CONFIG REQUIRED)
-
 function(add_headers VAR)
   set(headers ${${VAR}})
   foreach (header ${ARGN})
@@ -83,7 +82,6 @@ add_headers(CPPGEN_HEADERS
 add_library(cppgen src/attacks.cpp src/bitboard.cpp src/board.cpp src/move.cpp src/movegen.cpp)
 add_library(cppgen::cppgen ALIAS cppgen)
 
-target_link_libraries(cppgen PRIVATE fmt::fmt)
 target_compile_features(cppgen PUBLIC cxx_std_17)
 target_compile_options(cppgen 
   PRIVATE 

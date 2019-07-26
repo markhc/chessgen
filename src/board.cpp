@@ -1,6 +1,5 @@
 #include "cppgen/board.hpp"
 
-#include <fmt/format.h>
 #include <charconv>
 #include <iostream>
 #include <mutex>
@@ -101,7 +100,7 @@ void Board::loadFen(std::string_view fen)
   auto const fields = stringSplit(fen, ' ');
 
   if (fields.size() != 6) {
-    throw std::runtime_error{fmt::format("Invalid FEN record \"{}\"", fen)};
+    throw std::runtime_error{"Invalid FEN record"};
   }
 
   auto parsePiecePlacement = [this](std::string_view str) {
@@ -172,7 +171,7 @@ void Board::loadFen(std::string_view fen)
         } else if (c == 'q') {
           mCastleRights[Color::Black] = mCastleRights[Color::Black] | CastleSide::Queen;
         } else {
-          throw std::runtime_error{fmt::format("Invalid FEN record. Invalid castle rights '{}'", str)};
+          throw std::runtime_error{"Invalid FEN record. Invalid castle rights"};
         }
       }
     }
@@ -186,13 +185,13 @@ void Board::loadFen(std::string_view fen)
   auto parseHalfMoveNumber = [this](std::string_view str) {
     auto [p, ec] = std::from_chars(str.data(), str.data() + str.size(), mHalfMoves);
     if (ec != std::errc()) {
-      throw std::runtime_error{fmt::format("Invalid FEN record. Invalid half move value '{}'", str)};
+      throw std::runtime_error{"Invalid FEN record. Invalid half move value"};
     }
   };
   auto parseFullMoveNumber = [this](std::string_view str) {
     auto [p, ec] = std::from_chars(str.data(), str.data() + str.size(), mFullMove);
     if (ec != std::errc()) {
-      throw std::runtime_error{fmt::format("Invalid FEN record. Invalid full move value '{}'", str)};
+      throw std::runtime_error{"Invalid FEN record. Invalid full move value"};
     }
   };
   parsePiecePlacement(fields[0]);
