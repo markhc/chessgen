@@ -4,6 +4,7 @@
 #include "samples.hpp"
 
 #include <algorithm>
+#include <cctype>
 #include <iostream>
 #include <string>
 #include <string_view>
@@ -41,7 +42,7 @@ Game pgn_moves_to_game(std::string_view pgn)
   auto trim_spaces = [](std::string_view str) {
     str.remove_prefix(std::min(str.find_first_not_of(" \n\t\r"), str.size()));
     auto suffix = str.find_last_not_of(" \n\t\r");
-    if (suffix != str.npos) str.remove_suffix(std::max(str.size() - suffix - 1, 0ul));
+    if (suffix != str.npos) str.remove_suffix(std::max(str.size() - suffix - 1, std::size_t{0}));
     return str;
   };
 
