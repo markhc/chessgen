@@ -1,4 +1,6 @@
-# cppgen
+# cppgen 
+
+[![Build Status](https://travis-ci.org/MarkHC/cppgen.svg?branch=master)](https://travis-ci.org/MarkHC/cppgen)
 
 ### A chess move generator and validator written in modern C++
 
