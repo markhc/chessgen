@@ -8,6 +8,7 @@
 #include <iostream>
 #include <string>
 #include <string_view>
+#include <vector>
 
 struct Game {
   int                      result;  // -1 Black won, 0 draw, 1 White won
@@ -22,6 +23,23 @@ TEST(cppgen, StandardAlgebraicNotation)
   for (auto game : game_samples) {
     play_full_game(pgn_moves_to_game(game));
   }
+}
+std::vector<std::string> stringSplit(std::string_view source, char delimiter)
+{
+  auto result = std::vector<std::string>{};
+
+  auto start = 0u;
+  auto end   = source.find(delimiter);
+  while (end != std::string::npos) {
+    result.emplace_back(source.substr(start, end - start));
+    start = end + 1;
+    end   = source.find(delimiter, start);
+  }
+  auto last = source.substr(start);
+  if (last.size() != 0) {
+    result.emplace_back(std::move(last));
+  }
+  return result;
 }
 // -------------------------------------------------------------------------------------------------
 Game pgn_moves_to_game(std::string_view pgn)
@@ -46,26 +64,12 @@ Game pgn_moves_to_game(std::string_view pgn)
     return str;
   };
 
-  auto start = 0;
-  while (start < pgn.size()) {
-    if (!std::isdigit(pgn[start])) throw std::runtime_error("Something went wrong. Invalid PGN?");
+  auto moves = stringSplit(pgn, ' ');
 
-    // skip "10. "
-    while (pgn[start++] != '.')
-      ;
+  auto newEnd =
+      std::remove_if(moves.begin(), moves.end(), [](auto const& m) { return m.find('.') != m.npos; });
 
-    // find the next dot
-    auto count = 1;
-    while (pgn[start + count] != '.') count++;
-
-    auto fullmove = trim_spaces(pgn.substr(start, count - 2));
-
-    game.moves.emplace_back(trim_spaces(fullmove.substr(0, fullmove.find(' '))));
-    if (fullmove.find(' ') != fullmove.npos)
-      game.moves.emplace_back(trim_spaces(fullmove.substr(fullmove.find(' ') + 1)));
-
-    start += count - 1;
-  }
+  game.moves = std::vector(moves.begin(), newEnd);
 
   return game;
 }

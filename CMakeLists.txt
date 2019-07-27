@@ -14,6 +14,8 @@ endif()
 
 option(CPPGEN_INSTALL "Generate the install target." ${MASTER_PROJECT})
 option(CPPGEN_TEST "Generate the test target." ${MASTER_PROJECT})
+option(ASAN "Enable address sanitizer" OFF)
+option(UBSAN "Enable undefined behaviour sanitizer" OFF)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set(CPPGEN_COMPILER_FLAGS 
@@ -35,6 +37,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     -Wno-extra-semi
     -Wno-undefined-func-template
   )
+  
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
   set(CPPGEN_COMPILER_FLAGS
     # Enable "all" warnings
