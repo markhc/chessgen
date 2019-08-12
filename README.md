@@ -1,17 +1,23 @@
-# cppgen 
+# CppGen 
 
-[![Build Status](https://travis-ci.org/MarkHC/cppgen.svg?branch=master)](https://travis-ci.org/MarkHC/cppgen)
-
-### A chess move generator and validator written in modern C++
-
-cppgen is a C++17 chess library that is capable of generating legal moves or validating moves for a given chess position.
-
-It is both fast and easy to use.
+A chess move generator and validator written in modern C++
 
 This is still an early version, so bugs might (and probably do) exist. Please fill an issue if you find any.
 
+## Build Status
+| OS | Windows | Linux
+| ------ | ------- | ------
+| Master | [![Build status](https://ci.appveyor.com/api/projects/status/fmrgv06nwvoc2rv4?svg=true)](https://ci.appveyor.com/project/MarkHC/cppgen) | [![Build Status](https://travis-ci.org/MarkHC/cppgen.svg?branch=master)](https://travis-ci.org/MarkHC/cppgen)
+
 ## Installation
-// TODO
+
+```
+git clone https://github.com/MarkHC/cppgen.git
+cd cppgen
+mkdir build && cd build
+cmake ..
+make install
+```
 
 ## Usage examples
 
@@ -217,7 +223,3 @@ If the game has ended, returns the reason (Mate, Stalemate, etc). If the game is
 
 ### Board::isInCheck()
 Returns true if the currently active player is under check
-
-
-
-

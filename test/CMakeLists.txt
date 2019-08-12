@@ -3,24 +3,20 @@ add_executable(unit_tests
 )
 
 if(ASAN)
-    message(STATUS "address sanitizer enabled")
-
-    # environment variables
-    #  ASAN_OPTIONS=detect_stack_use_after_return=1
-    #  ASAN_OPTIONS=check_initialization_order=1
+    message(STATUS "ASAN enabled")
 
     target_compile_options(unit_tests
       PRIVATE
         -fsanitize=address
         -g
         -fno-omit-frame-pointer)
+    
     set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address)
-
 elseif(UBSAN)
-    message(STATUS "undefined behaviour sanitizer enabled")
+    message(STATUS "UBSAN enabled")
 
     target_compile_options(unit_tests
-    PRIVATE
+      PRIVATE
         -fsanitize=undefined
         -fsanitize=integer
         -g
