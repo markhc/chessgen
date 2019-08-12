@@ -5,9 +5,9 @@ A chess move generator and validator written in modern C++
 This is still an early version, so bugs might (and probably do) exist. Please fill an issue if you find any.
 
 ## Build Status
-| OS | Windows | Linux
-| ------ | ------- | ------
-| Master | [![Build status](https://ci.appveyor.com/api/projects/status/fmrgv06nwvoc2rv4?svg=true)](https://ci.appveyor.com/project/MarkHC/cppgen) | [![Build Status](https://travis-ci.org/MarkHC/cppgen.svg?branch=master)](https://travis-ci.org/MarkHC/cppgen)
+| OS     | Windows                                                                                                                                 | Linux                                                                                                         |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Master | [![Build status](https://ci.appveyor.com/api/projects/status/fmrgv06nwvoc2rv4?svg=true)](https://ci.appveyor.com/project/MarkHC/cppgen) | [![Build Status](https://travis-ci.org/MarkHC/cppgen.svg?branch=master)](https://travis-ci.org/MarkHC/cppgen) |
 
 ## Installation
 
@@ -100,7 +100,6 @@ for(auto&& move : board.getLegalMoves()) {
 ```
 
 ### Validating a move
-
 
 ```cpp
 using cppgen::Board;
@@ -208,28 +207,3 @@ board.getLegalMovesForSquare(Square::E2);
 //   e2e3
 //   e2e4
 ```
-
-### Board::isValid(std::string_view)
-### Board::isValid(Square, Square)
-### Board::isValid(CastleSide)
-### Board::isValid(Move)
-Checks whether the given move is in the set of legal moves.
-
-### Board::toSAN(Move)
-Returns the Standard Algebraic Notation string for the given Move object.
-
-**IMPORTANT**: To generate a correct SAN string the move MUST be a legal move on the current board position.
-The behavior of this function is undefined for illegal moves.
-
-### Board::makeMove(Move)
-### Board::makeMove(std::string_view)
-Plays a move, modifying the board position.
-
-### Board::isOver()
-Checks if the game has ended by either a Checkmate, Stalemate, Insufficient material of Threefold repetition (this last one is not yet supported)
-
-### Board::getGameOverReason()
-If the game has ended, returns the reason (Mate, Stalemate, etc). If the game is still underway returns `GameOverReason::OnGoing`
-
-### Board::isInCheck()
-Returns true if the currently active player is under check
