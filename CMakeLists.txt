@@ -5,7 +5,7 @@ project(cppgen CXX)
 set(CPPGEN_VERSION 1.0.0)
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
-# Determine if fmt is built as a subproject (using add_subdirectory)
+# Determine if cppgen is built as a subproject (using add_subdirectory)
 # or if it is the master project.
 set(MASTER_PROJECT OFF)
 if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
@@ -13,9 +13,9 @@ if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
 endif()
 
 option(CPPGEN_INSTALL "Generate the install target." ${MASTER_PROJECT})
-option(CPPGEN_TEST "Generate the test target." ${MASTER_PROJECT})
-option(ASAN "Enable address sanitizer" OFF)
-option(UBSAN "Enable undefined behaviour sanitizer" OFF)
+option(CPPGEN_TESTS   "Generate the test target." OFF)
+option(CPPGEN_ASAN    "Enable address sanitizer" OFF)
+option(CPPGEN_UBSAN   "Enable undefined behaviour sanitizer" OFF)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set(CPPGEN_COMPILER_FLAGS 
@@ -158,7 +158,7 @@ if(CPPGEN_INSTALL)
   install(FILES "${pkgconfig}" DESTINATION "${CPPGEN_PKGCONFIG_DIR}")
 endif ()
 
-if(CPPGEN_TEST)
+if(CPPGEN_TESTS)
   enable_testing()
   add_subdirectory(test)
 endif ()

@@ -2,7 +2,7 @@ add_executable(unit_tests
   main.cpp
 )
 
-if(ASAN)
+if(CPPGEN_ASAN)
     message(STATUS "ASAN enabled")
 
     target_compile_options(unit_tests
@@ -12,7 +12,7 @@ if(ASAN)
         -fno-omit-frame-pointer)
     
     set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address)
-elseif(UBSAN)
+elseif(CPPGEN_UBSAN)
     message(STATUS "UBSAN enabled")
 
     target_compile_options(unit_tests

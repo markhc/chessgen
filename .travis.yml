@@ -32,7 +32,7 @@ install:
   - cd "${TRAVIS_BUILD_DIR}"
 
 script:
-  - CXX=/usr/bin/g++-8 CC=/usr/bin/gcc-8 cmake -DCOVERAGE=1 .
+  - CXX=/usr/bin/g++-8 CC=/usr/bin/gcc-8 cmake -DCOVERAGE=1 -DCPPGEN_TESTS=ON .
   - cmake --build .
   - ./test/unit_tests
 
