@@ -11,12 +11,22 @@ This is still an early version, so bugs might (and probably do) exist. Please fi
 
 ## Installation
 
+Install
 ```
 git clone https://github.com/MarkHC/cppgen.git
 cd cppgen
 mkdir build && cd build
-cmake ..
+cmake .. 
 make install
+```
+
+Build tests
+```
+git clone --recursive https://github.com/MarkHC/cppgen.git
+cd cppgen
+mkdir build && cd build
+cmake -DCPPGEN_TEST=ON ..
+make
 ```
 
 ## Usage examples
