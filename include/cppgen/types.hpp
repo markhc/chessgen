@@ -102,7 +102,10 @@ constexpr Square makeSquare(File f, Rank r)
   CG_ASSERT(r >= Rank::Rank1 && r <= Rank::Rank8);
   return Square((static_cast<int>(r) << 3) + static_cast<int>(f));
 }
-constexpr int         makeIndex(Square square) { return int(square); }
+constexpr int makeIndex(Square square)
+{
+  return int(square);
+}
 constexpr inline File getFile(Square s)
 {
   CG_ASSERT(s >= Square::A1 && s <= Square::H8);
@@ -249,18 +252,20 @@ constexpr int makeIndex(E e)
 {
   return static_cast<int>(e);
 }
+inline std::string to_string(cppgen::Rank r)
+{
+  return std::string{static_cast<char>(static_cast<int>(r) + 1 + '0')};
+}
+inline std::string to_string(cppgen::File f)
+{
+  return std::string{static_cast<char>(static_cast<int>(f) + 'a')};
+}
+inline std::string to_string(cppgen::Square s)
+{
+  return to_string(getFile(s)) + to_string(getRank(s));
+}
+inline std::string to_string(cppgen::Color c)
+{
+  return c == cppgen::Color::White ? "White" : "Black";
+}
 }  // namespace cppgen
-
-namespace std
-{
-inline string to_string(cppgen::Rank r)
-{
-  return string{static_cast<char>(static_cast<int>(r) + 1 + '0')};
-}
-inline string to_string(cppgen::File f)
-{
-  return string{static_cast<char>(static_cast<int>(f) + 'a')};
-}
-inline string to_string(cppgen::Square s) { return to_string(getFile(s)) + to_string(getRank(s)); }
-inline string to_string(cppgen::Color c) { return c == cppgen::Color::White ? "White" : "Black"; }
-}  // namespace std
