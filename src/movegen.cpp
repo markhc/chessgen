@@ -432,8 +432,8 @@ auto generateMoves<GenType::Legal>(Board const& board) -> std::vector<Move>
     // - If we are moving the king, it must not be placed in check
     //
     // An extra scenario is also possible when there is an en passant capture. Ideally we would
-    // detect that that capture would place the king and check and set the pawn as pinned
-    // but that is rather tricky, it's easier to just check for legality after the move
+    // detect that the capture would place the king in check and set the pawn as a pinned piece
+    // but that is rather tricky. It's easier to just check for board legality after the move
     //
     if (pinnedPieces || move.fromSquare() == ksq || move.isEnPassant())
       return !legalityCheck(board, move);

@@ -11,7 +11,7 @@ set(GOOGLETEST_SOURCES
     )
 
 foreach(_source ${GOOGLETEST_SOURCES})
-    set_source_files_properties(${_source} PROPERTIES GENERATED 1)
+    set_source_files_properties(${_source} PROPERTIES GENERATED 0)
 endforeach()
 
 add_library(gtest ${GOOGLETEST_SOURCES})

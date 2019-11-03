@@ -197,7 +197,7 @@ Bitboard getSlidingAttacks(Piece piece, Square from, Bitboard blockers)
     case Piece::Rook:
       return getRookAttacks(makeIndex(from), blockers);
     case Piece::Queen:
-      return getBishopAttacks(makeIndex(from), blockers) | getRookAttacks(makeIndex(from), blockers);
+      return getBishopAttacks(makeIndex(from), blockers) | getRookAttacks(makeIndex(from), blockers);      
     case Piece::King:
     case Piece::Pawn:
     case Piece::Knight:

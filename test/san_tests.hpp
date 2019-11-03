@@ -39,12 +39,43 @@ struct Game {
 Game pgn_moves_to_game(std::string_view pgn);
 void play_full_game(Game game);
 
-TEST(cppgen, StandardAlgebraicNotation)
+TEST(FullGameTests, Game1)
 {
-  for (auto game : game_samples) {
-    play_full_game(pgn_moves_to_game(game));
-  }
+  play_full_game(pgn_moves_to_game(game_samples[0]));
 }
+TEST(FullGameTests, Game2)
+{
+  play_full_game(pgn_moves_to_game(game_samples[1]));
+}
+TEST(FullGameTests, Game3)
+{
+  play_full_game(pgn_moves_to_game(game_samples[2]));
+}
+TEST(FullGameTests, Game4)
+{
+  play_full_game(pgn_moves_to_game(game_samples[3]));
+}
+TEST(FullGameTests, Game5)
+{
+  play_full_game(pgn_moves_to_game(game_samples[4]));
+}
+TEST(FullGameTests, Game6)
+{
+  play_full_game(pgn_moves_to_game(game_samples[5]));
+}
+TEST(FullGameTests, Game7)
+{
+  play_full_game(pgn_moves_to_game(game_samples[6]));
+}
+TEST(FullGameTests, Game8)
+{
+  play_full_game(pgn_moves_to_game(game_samples[7]));
+}
+TEST(FullGameTests, Game9)
+{
+  play_full_game(pgn_moves_to_game(game_samples[8]));
+}
+
 std::vector<std::string> stringSplit(std::string_view source, char delimiter)
 {
   auto result = std::vector<std::string>{};
@@ -106,9 +137,11 @@ void play_full_game(Game game)
   for (auto&& move : game.moves) {
     ASSERT_TRUE(board.makeMove(move)) << "Move: " + move << '\n';
     if (move.find('+') != std::string_view::npos) {
-      EXPECT_TRUE(board.isInCheck());
+      ASSERT_TRUE(board.isInCheck());
     } else if (move.find('#') != std::string_view::npos) {
-      EXPECT_EQ(board.getGameOverReason(), GameOverReason::Mate);
+      ASSERT_EQ(board.getGameOverReason(), GameOverReason::Mate);
+    } else {
+      ASSERT_FALSE(board.isInCheck());
     }
   }
 

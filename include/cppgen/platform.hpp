@@ -39,17 +39,17 @@
 #include <intrin.h>
 
 #define intrin_popcount _mm_popcnt_u64
-inline int intrin_forward_scan(unsigned long x)
+inline int intrin_forward_scan(std::uint64_t x)
 {
-  unsigned long i = 0;
+  unsigned long i;
   _BitScanForward64(&i, x);
-  return static_cast<int>(i);
+  return static_cast<int>(i + 1);
 }
-inline int intrin_reverse_scan(unsigned long x)
+inline int intrin_reverse_scan(std::uint64_t x)
 {
-  unsigned long i = 0;
+  unsigned long i;
   _BitScanReverse64(&i, x);
-  return static_cast<int>(i);
+  return 63 - static_cast<int>(i);
 }
 #else
 #error Sorry, this compiler is not supported.
