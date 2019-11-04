@@ -71,7 +71,7 @@ public:
   /**
    * @brief Gets the X-FEN notation for the current board position
    */
-  std::string getFen() const;
+  [[nodiscard]] std::string getFen() const;
 
   /**
    * @brief Builds a string representation of the current board position
@@ -81,23 +81,23 @@ public:
    *
    * @returns The current boars position in a string representation
    */
-  std::string prettyPrint(bool useUnicodeChars = true) const;
+  [[nodiscard]] std::string prettyPrint(bool useUnicodeChars = true) const;
 
   /**
    * @brief Gets the list of all legal moves for the current board position
    */
-  std::vector<Move> const& getLegalMoves() const;
+  [[nodiscard]] std::vector<Move> const& getLegalMoves() const;
 
   /**
    * @brief Gets the list of all legal moves for the current board position in their Algebraic
    * representation
    */
-  std::vector<std::string> getLegalMovesAsSAN() const;
+  [[nodiscard]] std::vector<std::string> getLegalMovesAsSAN() const;
 
   /**
    * @brief Gets the list of all legal moves from the given square
    */
-  std::vector<Move> getLegalMovesForSquare(Square square) const;
+  [[nodiscard]] std::vector<Move> getLegalMovesForSquare(Square square) const;
 
   /**
    * @brief Checks whether the given move is legal

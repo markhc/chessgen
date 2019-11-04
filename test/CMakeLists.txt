@@ -1,5 +1,6 @@
 add_executable(unit_tests
   main.cpp
+  bitboard.cpp
 )
 
 if(CPPGEN_ASAN)

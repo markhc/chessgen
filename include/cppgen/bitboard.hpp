@@ -48,6 +48,8 @@ public:
   static Bitboard getLineBetween(Square a, Square b);
 
   constexpr explicit  operator bool() const;
+  constexpr bool      operator==(Bitboard bb) const;
+  constexpr bool      operator!=(Bitboard bb) const;
   constexpr Bitboard& operator<<=(std::uint32_t n);
   constexpr Bitboard& operator>>=(std::uint32_t n);
   constexpr Bitboard& operator&=(Bitboard b);
@@ -74,19 +76,26 @@ public:
   }
   constexpr void setBit(int index)
   {
+    if (index > 63 || index < 0) 
+      assert(!"Index out of range");
+
     bits |= 1ULL << index;
   }
   constexpr void clearBit(int index)
   {
+    if (index > 63 || index < 0) {
+      assert(!"Index out of range");
+    }
+
     bits &= ~(1ULL << index);
   }
   constexpr void setBit(Square s)
   {
-    bits |= 1ULL << makeIndex(s);
+    setBit(makeIndex(s));
   }
   constexpr void clearBit(Square s)
   {
-    bits &= ~(1ULL << makeIndex(s));
+    clearBit(makeIndex(s));
   }
   constexpr bool moreThanOne() const
   {
@@ -97,23 +106,23 @@ public:
   {
     return static_cast<int>(intrin_popcount(bits));
   }
-  int bsf() const
+  int lsb() const
   {
     if (isZero()) {
       return -1;
     }
-    return intrin_forward_scan(bits) - 1;
+    return intrin_ctz(bits) - 1;
   }
-  int bsr() const
+  int msb() const
   {
     if (isZero()) {
       return -1;
     }
-    return 63 - intrin_reverse_scan(bits);
+    return 63 - intrin_clz(bits);
   }
   int popLsb()
   {
-    int lsbIndex = intrin_forward_scan(bits) - 1;
+    int lsbIndex = intrin_ctz(bits) - 1;
     bits &= bits - 1;
     return lsbIndex;
   }
@@ -131,6 +140,14 @@ constexpr Bitboard::Bitboard(std::uint64_t bb) : bits(bb)
 constexpr Bitboard::operator bool() const
 {
   return bits != 0;
+}
+constexpr bool Bitboard::operator==(Bitboard bb) const
+{
+  return bits == bb.bits;
+}
+constexpr bool Bitboard::operator!=(Bitboard bb) const
+{
+  return !(*this == bb);
 }
 constexpr Bitboard& Bitboard::operator<<=(std::uint32_t n)
 {

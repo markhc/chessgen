@@ -313,10 +313,10 @@ Bitboard getRookAttacksSlow(int square, Bitboard blockers)
 
   Bitboard attacks{};
 
-  attacks |= getAttacks(Direction::North, &Bitboard::bsf);
-  attacks |= getAttacks(Direction::South, &Bitboard::bsr);
-  attacks |= getAttacks(Direction::East, &Bitboard::bsf);
-  attacks |= getAttacks(Direction::West, &Bitboard::bsr);
+  attacks |= getAttacks(Direction::North, &Bitboard::lsb);
+  attacks |= getAttacks(Direction::South, &Bitboard::msb);
+  attacks |= getAttacks(Direction::East, &Bitboard::lsb);
+  attacks |= getAttacks(Direction::West, &Bitboard::msb);
 
   return attacks;
 }
@@ -334,10 +334,10 @@ Bitboard getBishopAttacksSlow(int square, Bitboard blockers)
 
   Bitboard attacks{};
 
-  attacks |= getAttacks(Direction::NorthWest, &Bitboard::bsf);
-  attacks |= getAttacks(Direction::NorthEast, &Bitboard::bsf);
-  attacks |= getAttacks(Direction::SouthWest, &Bitboard::bsr);
-  attacks |= getAttacks(Direction::SouthEast, &Bitboard::bsr);
+  attacks |= getAttacks(Direction::NorthWest, &Bitboard::lsb);
+  attacks |= getAttacks(Direction::NorthEast, &Bitboard::lsb);
+  attacks |= getAttacks(Direction::SouthWest, &Bitboard::msb);
+  attacks |= getAttacks(Direction::SouthEast, &Bitboard::msb);
 
   return attacks;
 }

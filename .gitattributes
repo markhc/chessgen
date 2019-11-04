@@ -1,3 +1,5 @@
+* text eol=lf
+
 # Sources
 *.c     text diff=c
 *.cc    text diff=cpp

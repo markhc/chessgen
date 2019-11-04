@@ -288,7 +288,7 @@ std::string Board::getFen() const
   }
 
   fen += ' ';
-  fen += !mEnPassant ? "-" : Move::indexToNotation(mEnPassant.bsf());
+  fen += !mEnPassant ? "-" : Move::indexToNotation(mEnPassant.lsb());
   fen += " " + std::to_string(mHalfMoves);
   fen += " " + std::to_string(mFullMove);
 
@@ -813,13 +813,13 @@ bool Board::canShortCastle(Color color) const
     return false;
   }
 
-  auto       kingIndex  = getPieces(color, Piece::King).bsf();
+  auto       kingIndex  = getPieces(color, Piece::King).lsb();
   auto const enemyColor = ~color;
 
   auto const squareMask = Bitboard((1ULL << (kingIndex + 1)) | (1ULL << (kingIndex + 2)));
   if (getOccupied() & squareMask) return false;
 
-  auto rookIndex = getPieces(color, Piece::Rook).bsr();
+  auto rookIndex = getPieces(color, Piece::Rook).msb();
 
   // If there is no rook or if the only rook is the wrong one
   if (rookIndex == -1 || rookIndex < kingIndex) return false;
@@ -838,7 +838,7 @@ bool Board::canLongCastle(Color color) const
     return false;
   }
 
-  auto       kingIndex  = getPieces(color, Piece::King).bsr();
+  auto       kingIndex  = getPieces(color, Piece::King).msb();
   auto const enemyColor = ~color;
 
   auto const squareMask = Bitboard((1ULL << (kingIndex - 1)) |  //
@@ -846,7 +846,7 @@ bool Board::canLongCastle(Color color) const
                                    (1ULL << (kingIndex - 3)));
   if (getOccupied() & squareMask) return false;
 
-  auto rookIndex = getPieces(color, Piece::Rook).bsf();
+  auto rookIndex = getPieces(color, Piece::Rook).lsb();
 
   // If there is no rook or if the only rook is the wrong one
   if (rookIndex == -1 || rookIndex > kingIndex) return false;
@@ -1014,7 +1014,7 @@ Bitboard Board::getCheckers() const
 // -------------------------------------------------------------------------------------------------
 Square Board::getKingSquare(Color color) const
 {
-  return makeSquare(getPieces(color, Piece::King).bsf());
+  return makeSquare(getPieces(color, Piece::King).lsb());
 }
 // -------------------------------------------------------------------------------------------------
 Square Board::getCastlingRookSquare(Color color, CastleSide side) const
@@ -1028,7 +1028,7 @@ Square Board::getCastlingRookSquare(Color color, CastleSide side) const
 // -------------------------------------------------------------------------------------------------
 Square Board::getEnPassantSquare() const
 {
-  return makeSquare(mEnPassant.bsf());
+  return makeSquare(mEnPassant.lsb());
 }
 // -------------------------------------------------------------------------------------------------
 bool Board::isInsufficientMaterial() const

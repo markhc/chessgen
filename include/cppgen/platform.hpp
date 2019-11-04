@@ -30,8 +30,8 @@
  * GNU GCC/G++.
  */
 #define intrin_popcount __builtin_popcountll
-#define intrin_forward_scan __builtin_ffsll
-#define intrin_reverse_scan __builtin_clzll
+#define intrin_ctz __builtin_ffsll
+#define intrin_clz __builtin_clzll
 #elif defined(_MSC_VER)
 /**
  * Microsoft Visual Studio
@@ -39,13 +39,13 @@
 #include <intrin.h>
 
 #define intrin_popcount _mm_popcnt_u64
-inline int intrin_forward_scan(std::uint64_t x)
+inline int intrin_ctz(std::uint64_t x)
 {
   unsigned long i;
   _BitScanForward64(&i, x);
   return static_cast<int>(i + 1);
 }
-inline int intrin_reverse_scan(std::uint64_t x)
+inline int intrin_clz(std::uint64_t x)
 {
   unsigned long i;
   _BitScanReverse64(&i, x);

@@ -400,7 +400,7 @@ auto generateMoves<GenType::Evasions>(Board const& board) -> std::vector<Move>
   if (checkers.moreThanOne()) return moves;
 
   // Generate blocking evasions or captures of the checking piece
-  auto const checksq = makeSquare(checkers.bsf());
+  auto const checksq = makeSquare(checkers.lsb());
   auto const target  = Bitboard::getLineBetween(checksq, ksq) | checksq;
 
   if (us == Color::White)
