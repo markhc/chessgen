@@ -9,26 +9,6 @@ This is still an early version, so bugs might (and probably do) exist. Please fi
 | ------ | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | Master | [![Build status](https://ci.appveyor.com/api/projects/status/fmrgv06nwvoc2rv4?svg=true)](https://ci.appveyor.com/project/MarkHC/chessgen) | [![Build Status](https://travis-ci.org/MarkHC/chessgen.svg?branch=master)](https://travis-ci.org/MarkHC/chessgen) |
 
-## Installation
-
-Install
-```
-git clone https://github.com/MarkHC/chessgen.git
-cd chessgen
-mkdir build && cd build
-cmake .. 
-make install
-```
-
-Build tests
-```
-git clone --recursive https://github.com/MarkHC/chessgen.git
-cd chessgen
-mkdir build && cd build
-cmake -DCHESSGEN_TEST=ON ..
-make
-```
-
 ## Usage examples
 
 ### Generating moves
@@ -128,82 +108,22 @@ assert(board.isValid(CastleSide::King));
 
 ```
 
-## Main API
+## Installation
 
-### Constructors
-
-Creates a new board
-```cpp
-// Creates a board in the default initial position
-Board();
-
-// Creates a board from the given position
-Board(std::string_view fen);
+Install
+```
+git clone https://github.com/MarkHC/chessgen.git
+cd chessgen
+mkdir build && cd build
+cmake .. 
+make install
 ```
 
-### Board::loadFen(std::string_view)
-Sets the board to the position provided by the FEN string.
-```cpp
-// Creates a board in the default initial position
-Board board;
-
-// Load a new position
-board.loadFen("rnbq1knr/ppppp1pp/8/8/8/8/PPPPP1PP/RNBQK2R w KQkq - 0 1");
+Build tests
 ```
-
-### Board::getFen()
-Returns a FEN string for the current board position
-```cpp
-Board board;
-
-board.getFen(); 
-// returns "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-```
-
-### Board::prettyPrint(bool useUnicodeChars = true)
-Returns a pretty string representation for the current board position.
-```cpp
-Board board;
-
-board.prettyPrint(); 
-//   +-----------------+
-// 8 | ♜ ♞ ♝ ♛ ♚ ♝ ♞ ♜ |
-// 7 | ♟ ♟ ♟ ♟ ♟ ♟ ♟ ♟ |
-// 6 | . . . . . . . . |
-// 5 | . . . . . . . . |
-// 4 | . . . . . . . . |
-// 3 | . . . . . . . . |
-// 2 | ♙ ♙ ♙ ♙ ♙ ♙ ♙ ♙ |
-// 1 | ♖ ♘ ♗ ♕ ♔ ♗ ♘ ♖ |
-//   +-----------------+
-//     A B C D E F G H
-
-board.prettyPrint(false); 
-//   +-----------------+
-// 8 | r n b q k b n r |
-// 7 | p p p p p p p p |
-// 6 | . . . . . . . . |
-// 5 | . . . . . . . . |
-// 4 | . . . . . . . . |
-// 3 | . . . . . . . . |
-// 2 | P P P P P P P P |
-// 1 | R N B Q K B N R |
-//   +-----------------+
-//     A B C D E F G H
-```
-### Board::getLegalMoves()
-Returns the set of legal moves for the current board position.
-
-### Board::getLegalMovesAsSAN()
-Returns the set of legal moves for the current board position as the SAN representation.
-
-### Board::getLegalMovesForSquare(Square)
-Returns the set of legal moves starting from the given square.
-```cpp
-Board board;
-
-board.getLegalMovesForSquare(Square::E2);
-// returns:
-//   e2e3
-//   e2e4
+git clone --recursive https://github.com/MarkHC/chessgen.git
+cd chessgen
+mkdir build && cd build
+cmake -DCHESSGEN_TEST=ON ..
+make
 ```
