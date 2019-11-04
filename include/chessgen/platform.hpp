@@ -56,8 +56,8 @@ inline int intrin_clz(std::uint64_t x)
 #endif
 
 #if defined(NDEBUG)
-#define CG_ASSERT(x) ((void)0)
+#define CHESSGEN_ASSERT(x) ((void)0)
 #else
 #include <cassert>
-#define CG_ASSERT(x) assert((x))
+#define CHESSGEN_ASSERT(x) assert((x))
 #endif
