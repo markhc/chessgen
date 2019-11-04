@@ -26,7 +26,7 @@
 #include <string_view>
 #include "platform.hpp"
 
-namespace cppgen
+namespace chessgen
 {
 enum class CastleSide {
   None  = (0),       ///< Players cannot castle
@@ -34,7 +34,7 @@ enum class CastleSide {
   Queen = (1 << 1),  ///< Black can castle on the king side
 };
 
-CPPGEN_ENUMOPS(CastleSide)
+CHESSGEN_ENUMOPS(CastleSide)
 
 enum class Direction {
   North,
@@ -273,20 +273,20 @@ constexpr int makeIndex(E e)
 {
   return static_cast<int>(e);
 }
-inline std::string to_string(cppgen::Rank r)
+inline std::string to_string(chessgen::Rank r)
 {
   return std::string{static_cast<char>(static_cast<int>(r) + 1 + '0')};
 }
-inline std::string to_string(cppgen::File f)
+inline std::string to_string(chessgen::File f)
 {
   return std::string{static_cast<char>(static_cast<int>(f) + 'a')};
 }
-inline std::string to_string(cppgen::Square s)
+inline std::string to_string(chessgen::Square s)
 {
   return to_string(getFile(s)) + to_string(getRank(s));
 }
-inline std::string to_string(cppgen::Color c)
+inline std::string to_string(chessgen::Color c)
 {
-  return c == cppgen::Color::White ? "White" : "Black";
+  return c == chessgen::Color::White ? "White" : "Black";
 }
-}  // namespace cppgen
+}  // namespace chessgen

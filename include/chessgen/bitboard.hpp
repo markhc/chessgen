@@ -26,7 +26,7 @@
 #include "platform.hpp"
 #include "types.hpp"
 
-namespace cppgen
+namespace chessgen
 {
 class Bitboard
 {
@@ -76,8 +76,9 @@ public:
   }
   constexpr void setBit(int index)
   {
-    if (index > 63 || index < 0) 
+    if (index > 63 || index < 0) {
       assert(!"Index out of range");
+    }
 
     bits |= 1ULL << index;
   }
@@ -288,4 +289,4 @@ constexpr Bitboard Bitboard::shiftTowards(Direction d) const
       return Bitboard{};
   }
 }
-}  // namespace cppgen
+}  // namespace chessgen

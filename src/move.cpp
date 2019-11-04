@@ -19,10 +19,10 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#include "cppgen/move.hpp"
-#include "cppgen/helpers.hpp"
+#include "chessgen/move.hpp"
+#include "chessgen/helpers.hpp"
 
-namespace cppgen
+namespace chessgen
 {
 // -------------------------------------------------------------------------------------------------
 Move::Move()
@@ -102,4 +102,4 @@ Piece Move::promotedTo() const
   return mPromotedTo;
 }
 // -------------------------------------------------------------------------------------------------
-}  // namespace cppgen
+}  // namespace chessgen

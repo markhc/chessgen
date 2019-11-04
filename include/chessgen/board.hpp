@@ -31,9 +31,10 @@
 
 #include "bitboard.hpp"
 #include "config.hpp"
+#include "game_state.hpp"
 #include "move.hpp"
 
-namespace cppgen
+namespace chessgen
 {
 enum class GameOverReason {
   OnGoing,
@@ -46,9 +47,9 @@ class Board
 {
 public:
   Board(Board const&);
-  Board(Board&&);
+  Board(Board&&) noexcept;
   Board& operator=(Board const&);
-  Board& operator=(Board&&);
+  Board& operator=(Board&&) noexcept;
 
 public:
   /**
@@ -343,8 +344,6 @@ private:
   void addPiece(Piece type, Color color, Square square);
   void removePiece(Piece type, Color color, Square square);
   void movePiece(Piece type, Color color, Square from, Square to);
-  void clearBitboards();
-  void updateBitboards();
 
   template <typename Fn>
   auto findMoveIf(Fn f) const -> std::optional<Move>
@@ -365,17 +364,10 @@ private:
   Bitboard getRookAttacksForSquare(Square square, Color color) const;
   Bitboard getQueenAttacksForSquare(Square square, Color color) const;
 
-  std::array<std::array<Bitboard, 6>, 2> mPieces{};
-  std::array<Bitboard, 2>                mAllPieces{};
-  Bitboard                               mOccupied{};
-  Bitboard                               mEnPassant{};
-  Color                                  mTurn{Color::White};
-  int                                    mHalfMoves{0};
-  int                                    mFullMove{1};
-  std::array<CastleSide, 2>              mCastleRights{};
+  GameState                              mState;
   GameOverReason                         mReason{GameOverReason::OnGoing};
   mutable std::vector<Move>              mLegalMoves;
   mutable std::atomic_bool               mBoardChanged{true};
   mutable std::mutex                     mMovesMutex{};
 };
-}  // namespace cppgen
+}  // namespace chessgen

@@ -19,15 +19,15 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#include "cppgen/movegen.hpp"
-#include "cppgen/attacks.hpp"
-#include "cppgen/board.hpp"
+#include "chessgen/movegen.hpp"
+#include "chessgen/attacks.hpp"
+#include "chessgen/board.hpp"
 
 #include <algorithm>
 #include <iostream>
 #include <type_traits>
 
-namespace cppgen
+namespace chessgen
 {
 template <Color Us, GenType Type>
 void generateAll(Board const& board, Bitboard target, std::vector<Move>& moves);
@@ -474,4 +474,4 @@ void generateAll(Board const& board, Bitboard target, std::vector<Move>& moves)
   }
 }
 // -------------------------------------------------------------------------------------------------
-}  // namespace cppgen
+}  // namespace chessgen

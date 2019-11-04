@@ -29,8 +29,8 @@
 
 #endif
 
-#if !defined(CPPGEN_ENUMOPS)
-#define CPPGEN_ENUMOPS(E)                                                                          \
+#if !defined(CHESSGEN_ENUMOPS)
+#define CHESSGEN_ENUMOPS(E)                                                                          \
   MAKE_ENUM_OPERATOR(E, std::underlying_type_t<E>, |)                                              \
   MAKE_ENUM_OPERATOR(E, std::underlying_type_t<E>, ^)                                              \
   MAKE_ENUM_OPERATOR(E, std::underlying_type_t<E>, &)                                              \

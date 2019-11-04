@@ -26,7 +26,7 @@
 #include <string_view>
 #include <vector>
 
-namespace cppgen
+namespace chessgen
 {
 namespace detail
 {
@@ -105,4 +105,4 @@ constexpr auto enumHasFlag(E value, E flag)
   return (value & flag) != E(std::underlying_type_t<E>(0));
 }
 // -----------------------------------------------------------------------------
-}  // namespace cppgen
+}  // namespace chessgen

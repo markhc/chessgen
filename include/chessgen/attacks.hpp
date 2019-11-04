@@ -19,36 +19,17 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#include "chessgen/bitboard.hpp"
-#include "chessgen/attacks.hpp"
+#pragma once
 
-#include <sstream>
+#include "bitboard.hpp"
 
 namespace chessgen
 {
-Bitboard Bitboard::getLineBetween(Square a, Square b)
+namespace attacks
 {
-  return attacks::getLineBetween(a, b) &
-         ((Bitboards::AllSquares << (makeIndex(a) + (makeIndex(a) < makeIndex(b)))) ^
-          (Bitboards::AllSquares << (makeIndex(b) + !(makeIndex(a) < makeIndex(b)))));
-}
-std::string Bitboard::prettyPrint() const
-{
-  std::stringstream os;
-
-  os << "  +-----------------+\n";
-  for (Rank r = Rank::Rank8; r >= Rank::Rank1; --r) {
-    os << static_cast<int>(r) + 1 << " | ";
-    for (File f = File::FileA; f <= File::FileH; ++f) {
-      os << ((*this & makeSquare(f, r)) ? "x " : ". ");
-    }
-
-    os << "|\n";
-  }
-
-  os << "  +-----------------+\n";
-  os << "    A B C D E F G H\n";
-
-  return os.str();
-}
+void     precomputeTables();
+Bitboard getLineBetween(Square s1, Square s2);
+Bitboard getNonSlidingAttacks(Piece piece, Square from, Color color);
+Bitboard getSlidingAttacks(Piece piece, Square from, Bitboard blockers);
+}  // namespace attacks
 }  // namespace chessgen

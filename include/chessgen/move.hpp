@@ -25,7 +25,7 @@
 
 #include "types.hpp"
 
-namespace cppgen
+namespace chessgen
 {
 class Move
 {
@@ -77,4 +77,4 @@ private:
   Piece      mPromotedTo{Piece::None};
   CastleSide mCastleSide{CastleSide::None};
 };
-}  // namespace cppgen
+}  // namespace chessgen

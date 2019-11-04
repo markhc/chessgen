@@ -19,31 +19,29 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#pragma once
+#include "chessgen/game_state.hpp"
 
-#include <vector>
-#include "move.hpp"
-
-namespace cppgen
+namespace chessgen
 {
-class Board;
+// -------------------------------------------------------------------------------------------------
+void GameState::clearEnPassant()
+{
+  mEnPassant.clear();
+}
+// -------------------------------------------------------------------------------------------------
+void GameState::updateNonPieceBitboards()
+{
+  mAllPieces[Color::White] =
+      mPieces[Color::White][Piece::Pawn] | mPieces[Color::White][Piece::Rook] |
+      mPieces[Color::White][Piece::Knight] | mPieces[Color::White][Piece::Bishop] |
+      mPieces[Color::White][Piece::Queen] | mPieces[Color::White][Piece::King];
 
-enum class GenType {
-  Quiets,       // Generates all pseudo-legal non-captures and underpromotions
-  QuietChecks,  // Generates all pseudo-legal non-captures and underpromotions that give check
-  Captures,     // Generates all pseudo-legal captures and queen promotions
-  NonEvasions,  // Generates all pseudo-legal captures and non-captures
-  Evasions,     // Generates all pseudo-legal moves that get out of check
-  Legal,        // Generates all legal moves
-};
-/**
- * @brief Generate a set of moves based on the given board position
- *
- * @param   board The board to generate moves for
- *
- * @returns The move list
- */
-template <GenType Type>
-auto generateMoves(Board const& board) -> std::vector<Move>;
+  mAllPieces[Color::Black] =
+      mPieces[Color::Black][Piece::Pawn] | mPieces[Color::Black][Piece::Rook] |
+      mPieces[Color::Black][Piece::Knight] | mPieces[Color::Black][Piece::Bishop] |
+      mPieces[Color::Black][Piece::Queen] | mPieces[Color::Black][Piece::King];
 
-}  // namespace cppgen
+  mOccupied = mAllPieces[Color::White] | mAllPieces[Color::Black];
+}
+// -------------------------------------------------------------------------------------------------
+}  // namespace chessgen

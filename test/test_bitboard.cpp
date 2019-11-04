@@ -1,8 +1,28 @@
+//
+// Copyright (C) 2019-2019 markhc
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy of
+// this software and associated documentation files (the "Software"), to deal in
+// the Software without restriction, including without limitation the rights to
+// use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+// the Software, and to permit persons to whom the Software is furnished to do so,
+// subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+//
 #include <gtest/gtest.h>
 
-#include <cppgen/bitboard.hpp>
+#include <chessgen/bitboard.hpp>
 
-using cppgen::Bitboard;
+using chessgen::Bitboard;
 
 TEST(Bitboard, DefaultConstructor)
 {
@@ -61,21 +81,21 @@ TEST(Bitboard, SettingAndClearingBits)
   board.clear();
   ASSERT_EQ(board.getBits(), 0ULL);
 
-  board.setBit(cppgen::Square::A1);
+  board.setBit(chessgen::Square::A1);
   ASSERT_EQ(board.getBits(), 1ULL);
-  board.setBit(cppgen::Square::B1);
+  board.setBit(chessgen::Square::B1);
   ASSERT_EQ(board.getBits(), 3LL);
-  board.setBit(cppgen::Square::G8);
+  board.setBit(chessgen::Square::G8);
   ASSERT_EQ(board.getBits(), 0x4000000000000003ULL);
-  board.setBit(cppgen::Square::H8);
+  board.setBit(chessgen::Square::H8);
   ASSERT_EQ(board.getBits(), 0xC000000000000003ULL);
-  board.clearBit(cppgen::Square::H8);
+  board.clearBit(chessgen::Square::H8);
   ASSERT_EQ(board.getBits(), 0x4000000000000003ULL);
 }
 
 TEST(Bitboard, Intrinsics)
 {
-  Bitboard board{cppgen::Bitboards::FileA};
+  Bitboard board{chessgen::Bitboards::FileA};
 
   EXPECT_EQ(board.popCount(), 8);
   EXPECT_EQ(board.lsb(), 0);
@@ -95,12 +115,12 @@ TEST(Bitboard, ShiftTowards)
     return bitboard;
   };
 
-  Bitboard board{cppgen::Bitboards::FileA};
-  
-  EXPECT_EQ(board.shiftTowards(cppgen::Direction::East), cppgen::Bitboards::FileB);
-  EXPECT_EQ(board.shiftTowards(cppgen::Direction::West), Bitboard{});
-  EXPECT_EQ(board.shiftTowards(cppgen::Direction::North),
-            clearSquare(cppgen::Bitboards::FileA, cppgen::Square::A1));
-  EXPECT_EQ(board.shiftTowards(cppgen::Direction::South),
-            clearSquare(cppgen::Bitboards::FileA, cppgen::Square::A8));
+  Bitboard board{chessgen::Bitboards::FileA};
+
+  EXPECT_EQ(board.shiftTowards(chessgen::Direction::East), chessgen::Bitboards::FileB);
+  EXPECT_EQ(board.shiftTowards(chessgen::Direction::West), Bitboard{});
+  EXPECT_EQ(board.shiftTowards(chessgen::Direction::North),
+            clearSquare(chessgen::Bitboards::FileA, chessgen::Square::A1));
+  EXPECT_EQ(board.shiftTowards(chessgen::Direction::South),
+            clearSquare(chessgen::Bitboards::FileA, chessgen::Square::A8));
 }

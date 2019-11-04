@@ -19,9 +19,9 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#include "cppgen/attacks.hpp"
+#include "chessgen/attacks.hpp"
 
-namespace cppgen
+namespace chessgen
 {
 namespace attacks
 {
@@ -369,4 +369,4 @@ Bitboard getBlockersFromIndex(int index, Bitboard blockerMask)
   return blockers;
 }
 }  // namespace attacks
-}  // namespace cppgen
+}  // namespace chessgen

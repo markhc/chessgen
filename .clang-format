@@ -25,7 +25,7 @@ UseTab: Never
 SortIncludes: 'true'
 AlignTrailingComments: 'true'
 StatementMacros:
-  - CPPGEN_ENUMOPS
+  - CHESSGEN_ENUMOPS
 PenaltyExcessCharacter: 5
 PenaltyBreakComment: 50
 ...

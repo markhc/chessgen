@@ -19,7 +19,7 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#include "cppgen/board.hpp"
+#include "chessgen/board.hpp"
 
 #include <cctype>
 #include <charconv>
@@ -29,11 +29,12 @@
 #include <stdexcept>
 #include <string_view>
 
-#include "cppgen/attacks.hpp"
-#include "cppgen/helpers.hpp"
-#include "cppgen/movegen.hpp"
+#include "chessgen/attacks.hpp"
+#include "chessgen/fen.hpp"
+#include "chessgen/helpers.hpp"
+#include "chessgen/movegen.hpp"
 
-namespace cppgen
+namespace chessgen
 {
 static std::string_view _initialFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 static std::once_flag   _flag;
@@ -52,29 +53,12 @@ Board::Board(std::string_view initialFen)
 }
 // -------------------------------------------------------------------------------------------------
 Board::Board(Board const& rhs)
-    : mPieces{rhs.mPieces},
-      mAllPieces{rhs.mAllPieces},
-      mOccupied{rhs.mOccupied},
-      mEnPassant{rhs.mEnPassant},
-      mTurn{rhs.mTurn},
-      mHalfMoves{rhs.mHalfMoves},
-      mFullMove{rhs.mFullMove},
-      mCastleRights{rhs.mCastleRights},
-      mReason{rhs.mReason},
-      mLegalMoves{},
-      mBoardChanged{true}
+    : mState{rhs.mState}, mReason{rhs.mReason}, mLegalMoves{}, mBoardChanged{true}
 {
 }
 // -------------------------------------------------------------------------------------------------
-Board::Board(Board&& rhs)
-    : mPieces{std::move(rhs.mPieces)},
-      mAllPieces{std::move(rhs.mAllPieces)},
-      mOccupied{std::move(rhs.mOccupied)},
-      mEnPassant{std::move(rhs.mEnPassant)},
-      mTurn{std::move(rhs.mTurn)},
-      mHalfMoves{std::move(rhs.mHalfMoves)},
-      mFullMove{std::move(rhs.mFullMove)},
-      mCastleRights{std::move(rhs.mCastleRights)},
+Board::Board(Board&& rhs) noexcept
+    : mState{std::move(rhs.mState)},
       mReason{std::move(rhs.mReason)},
       mLegalMoves{std::move(rhs.mLegalMoves)},
       mBoardChanged{rhs.mBoardChanged.load()}
@@ -83,14 +67,7 @@ Board::Board(Board&& rhs)
 // -------------------------------------------------------------------------------------------------
 Board& Board::operator=(Board const& rhs)
 {
-  mPieces       = rhs.mPieces;
-  mAllPieces    = rhs.mAllPieces;
-  mOccupied     = rhs.mOccupied;
-  mEnPassant    = rhs.mEnPassant;
-  mTurn         = rhs.mTurn;
-  mHalfMoves    = rhs.mHalfMoves;
-  mFullMove     = rhs.mFullMove;
-  mCastleRights = rhs.mCastleRights;
+  mState        = rhs.mState;
   mReason       = rhs.mReason;
   mLegalMoves   = rhs.mLegalMoves;
   mBoardChanged = rhs.mBoardChanged.load();
@@ -98,16 +75,9 @@ Board& Board::operator=(Board const& rhs)
   return *this;
 }
 // -------------------------------------------------------------------------------------------------
-Board& Board::operator=(Board&& rhs)
+Board& Board::operator=(Board&& rhs) noexcept
 {
-  mPieces       = std::move(rhs.mPieces);
-  mAllPieces    = std::move(rhs.mAllPieces);
-  mOccupied     = std::move(rhs.mOccupied);
-  mEnPassant    = std::move(rhs.mEnPassant);
-  mTurn         = std::move(rhs.mTurn);
-  mHalfMoves    = std::move(rhs.mHalfMoves);
-  mFullMove     = std::move(rhs.mFullMove);
-  mCastleRights = std::move(rhs.mCastleRights);
+  mState        = std::move(rhs.mState);
   mReason       = std::move(rhs.mReason);
   mLegalMoves   = std::move(rhs.mLegalMoves);
   mBoardChanged = rhs.mBoardChanged.load();
@@ -117,182 +87,17 @@ Board& Board::operator=(Board&& rhs)
 // -------------------------------------------------------------------------------------------------
 void Board::loadFen(std::string_view fen)
 {
-  clearBitboards();
-
-  auto const fields = stringSplit(fen, ' ');
-
-  if (fields.size() != 6) {
-    throw std::runtime_error{"Invalid FEN record"};
+  {
+    auto lock = std::unique_lock(mMovesMutex);
+    mLegalMoves.clear();
   }
-
-  auto parsePiecePlacement = [this](std::string_view str) {
-    auto boardPos = 56ULL;
-    for (auto&& currChar : str) {
-      switch (currChar) {
-        case 'p':
-          mPieces[Color::Black][Piece::Pawn].setBit(boardPos++);
-          break;
-        case 'r':
-          mPieces[Color::Black][Piece::Rook].setBit(boardPos++);
-          break;
-        case 'n':
-          mPieces[Color::Black][Piece::Knight].setBit(boardPos++);
-          break;
-        case 'b':
-          mPieces[Color::Black][Piece::Bishop].setBit(boardPos++);
-          break;
-        case 'q':
-          mPieces[Color::Black][Piece::Queen].setBit(boardPos++);
-          break;
-        case 'k':
-          mPieces[Color::Black][Piece::King].setBit(boardPos++);
-          break;
-        case 'P':
-          mPieces[Color::White][Piece::Pawn].setBit(boardPos++);
-          break;
-        case 'R':
-          mPieces[Color::White][Piece::Rook].setBit(boardPos++);
-          break;
-        case 'N':
-          mPieces[Color::White][Piece::Knight].setBit(boardPos++);
-          break;
-        case 'B':
-          mPieces[Color::White][Piece::Bishop].setBit(boardPos++);
-          break;
-        case 'Q':
-          mPieces[Color::White][Piece::Queen].setBit(boardPos++);
-          break;
-        case 'K':
-          mPieces[Color::White][Piece::King].setBit(boardPos++);
-          break;
-        case '/':
-          boardPos -= 16;  // Go down one rank
-          break;
-        default:  // handle empty squares
-          boardPos += static_cast<std::uint64_t>(currChar - '0');
-      }
-    }
-  };
-
-  auto parsePlayerTurn = [this](std::string_view str) {
-    mTurn = str == "w" ? Color::White : Color::Black;
-  };
-
-  auto parseCastlingAvailability = [this](std::string_view str) {
-    mCastleRights[Color::White] = CastleSide::None;
-    mCastleRights[Color::Black] = CastleSide::None;
-
-    if (str != "-") {
-      for (auto&& c : str) {
-        if (c == 'K') {
-          mCastleRights[Color::White] = mCastleRights[Color::White] | CastleSide::King;
-        } else if (c == 'Q') {
-          mCastleRights[Color::White] = mCastleRights[Color::White] | CastleSide::Queen;
-        } else if (c == 'k') {
-          mCastleRights[Color::Black] = mCastleRights[Color::Black] | CastleSide::King;
-        } else if (c == 'q') {
-          mCastleRights[Color::Black] = mCastleRights[Color::Black] | CastleSide::Queen;
-        } else {
-          throw std::runtime_error{"Invalid FEN record. Invalid castle rights"};
-        }
-      }
-    }
-  };
-  auto parseEnPassantSquare = [this](std::string_view str) {
-    if (str != "-") {
-      mEnPassant.setBit(Move::notationToIndex(str));
-    }
-  };
-
-  auto parseHalfMoveNumber = [this](std::string_view str) {
-    auto [p, ec] = std::from_chars(str.data(), str.data() + str.size(), mHalfMoves);
-    if (ec != std::errc()) {
-      throw std::runtime_error{"Invalid FEN record. Invalid half move value"};
-    }
-  };
-  auto parseFullMoveNumber = [this](std::string_view str) {
-    auto [p, ec] = std::from_chars(str.data(), str.data() + str.size(), mFullMove);
-    if (ec != std::errc()) {
-      throw std::runtime_error{"Invalid FEN record. Invalid full move value"};
-    }
-  };
-  parsePiecePlacement(fields[0]);
-  parsePlayerTurn(fields[1]);
-  parseCastlingAvailability(fields[2]);
-  parseEnPassantSquare(fields[3]);
-  parseHalfMoveNumber(fields[4]);
-  parseFullMoveNumber(fields[5]);
-
-  updateBitboards();
+  mReason = GameOverReason::OnGoing;
+  mState = fen::toGameState(fen);
 }
 // -------------------------------------------------------------------------------------------------
 std::string Board::getFen() const
 {
-  std::string fen;
-
-  auto getPieceOnSquare = [this](Square square) {
-    auto const pieces = {
-        Piece::King,
-        Piece::Queen,
-        Piece::Rook,
-        Piece::Bishop,
-        Piece::Knight,
-        Piece::Pawn,
-    };
-    for (auto color : {Color::White, Color::Black}) {
-      for (auto piece : pieces) {
-        if (getPieces(color, piece) & square) {
-          return std::make_pair(color, piece);
-        }
-      }
-    }
-    return std::make_pair(Color::White, Piece::None);
-  };
-
-  int emptyCount = 0;
-
-  for (auto i = 56; i >= 0; i -= 8) {
-    for (int boardPos = i; boardPos < i + 8; boardPos++) {
-      auto const square         = makeSquare(boardPos);
-      auto const squareOccupied = !!(getOccupied() & square);
-      if (squareOccupied) {
-        auto [color, piece] = getPieceOnSquare(square);
-        if (emptyCount > 0) {
-          fen += std::to_string(emptyCount);
-          emptyCount = 0;
-        }
-        if (color == Color::White)
-          fen += to_string<Color::White>(piece);
-        else
-          fen += to_string<Color::Black>(piece);
-      } else {
-        emptyCount++;
-      }
-    }
-    if (emptyCount > 0) {
-      fen += std::to_string(emptyCount);
-      emptyCount = 0;
-    }
-    if (i != 0) fen += '/';
-  }
-
-  fen += mTurn == Color::White ? " w " : " b ";
-  if (mCastleRights[Color::White] == CastleSide::None &&
-      mCastleRights[Color::Black] == CastleSide::None) {
-    fen += '-';
-  } else {
-    if (enumHasFlag(mCastleRights[Color::White], CastleSide::King)) fen += 'K';
-    if (enumHasFlag(mCastleRights[Color::White], CastleSide::Queen)) fen += 'Q';
-    if (enumHasFlag(mCastleRights[Color::Black], CastleSide::King)) fen += 'k';
-    if (enumHasFlag(mCastleRights[Color::Black], CastleSide::Queen)) fen += 'q';
-  }
-
-  fen += ' ';
-  fen += !mEnPassant ? "-" : Move::indexToNotation(mEnPassant.lsb());
-  fen += " " + std::to_string(mHalfMoves);
-  fen += " " + std::to_string(mFullMove);
-
-  return fen;
+  return fen::fromGameState(mState);
 }
 // -------------------------------------------------------------------------------------------------
 std::string Board::prettyPrint(bool useUnicodeChars) const
@@ -330,7 +135,7 @@ std::string Board::prettyPrint(bool useUnicodeChars) const
 
     for (auto&& color : {Color::White, Color::Black}) {
       for (auto&& piece : pieces) {
-        if (mPieces[color][piece] & square) {
+        if (mState.mPieces[color][piece] & square) {
           ss << charPieces[color][piece] << ' ';
           return true;
         }
@@ -701,7 +506,7 @@ bool Board::makeMove(Move const& move)
     CG_ASSERT(isSquareEmpty(to) || getColorOfPieceOn(to) == them);
   }
 
-  mEnPassant.clear();
+  mState.clearEnPassant();
 
   if (move.isCastling()) {
     auto const kingside = move.getCastleSide() == CastleSide::King;
@@ -727,12 +532,12 @@ bool Board::makeMove(Move const& move)
     addPiece(Piece::Rook, us, rookTo);
     addPiece(Piece::King, us, kingTo);
 
-    mCastleRights[us] = CastleSide::None;
+    mState.mCastleRights[us] = CastleSide::None;
   } else {
     auto captured = move.isEnPassant() ? Piece::Pawn : getPieceOn(to);
 
     if (captured != Piece::None) {
-      mHalfMoves = 0;  // Reset fifty-move counter on captures
+      mState.mHalfMoves = 0;  // Reset fifty-move counter on captures
       if (move.isEnPassant())
         removePiece(captured, them, to + behind);
       else
@@ -748,10 +553,10 @@ bool Board::makeMove(Move const& move)
   }
 
   if (us == Color::Black) {
-    ++mFullMove;
+    ++mState.mFullMove;
   }
 
-  mTurn = ~mTurn;
+  mState.mTurn = ~mState.mTurn;
 
   gameOverCheck();
 
@@ -765,12 +570,12 @@ bool Board::makeMove(std::string_view move)
 // -------------------------------------------------------------------------------------------------
 int Board::getHalfMoves() const
 {
-  return mHalfMoves;
+  return mState.mHalfMoves;
 }
 // -------------------------------------------------------------------------------------------------
 int Board::getFullMove() const
 {
-  return mFullMove;
+  return mState.mFullMove;
 }
 // -------------------------------------------------------------------------------------------------
 bool Board::isInitialPosition() const
@@ -780,7 +585,7 @@ bool Board::isInitialPosition() const
 // -------------------------------------------------------------------------------------------------
 Color Board::getActivePlayer() const
 {
-  return mTurn;
+  return mState.mTurn;
 }
 // -------------------------------------------------------------------------------------------------
 bool Board::isOver() const
@@ -809,7 +614,7 @@ bool Board::canShortCastle(Color color) const
 {
   // Cannot castle if:
   // - The player has no castle rights (king or rook already moved)
-  if (!enumHasFlag(mCastleRights[color], CastleSide::King)) {
+  if (!enumHasFlag(mState.mCastleRights[color], CastleSide::King)) {
     return false;
   }
 
@@ -834,7 +639,7 @@ bool Board::canLongCastle(Color color) const
 {
   // Cannot castle if:
   // - The player has no castle rights (king or rook already moved)
-  if (!enumHasFlag(mCastleRights[color], CastleSide::King)) {
+  if (!enumHasFlag(mState.mCastleRights[color], CastleSide::King)) {
     return false;
   }
 
@@ -859,37 +664,37 @@ bool Board::canLongCastle(Color color) const
 // -------------------------------------------------------------------------------------------------
 CastleSide Board::getCastlingRights(Color color) const
 {
-  return mCastleRights[color];
+  return mState.mCastleRights[color];
 }
 // -------------------------------------------------------------------------------------------------
 Bitboard Board::getPieces(Piece type) const
 {
-  return mPieces[Color::White][type] | mPieces[Color::Black][type];
+  return mState.mPieces[Color::White][type] | mState.mPieces[Color::Black][type];
 }
 // -------------------------------------------------------------------------------------------------
 Bitboard Board::getPieces(Color color, Piece type) const
 {
-  return mPieces[color][type];
+  return mState.mPieces[color][type];
 }
 // -------------------------------------------------------------------------------------------------
 Bitboard Board::getAllPieces(Color color) const
 {
-  return mAllPieces[color];
+  return mState.mAllPieces[color];
 }
 // -------------------------------------------------------------------------------------------------
 Bitboard Board::getOccupied() const
 {
-  return mOccupied;
+  return mState.mOccupied;
 }
 // -------------------------------------------------------------------------------------------------
 Bitboard Board::getUnoccupied() const
 {
-  return ~mOccupied;
+  return ~mState.mOccupied;
 }
 // -------------------------------------------------------------------------------------------------
 Bitboard Board::getEnPassant() const
 {
-  return mEnPassant;
+  return mState.mEnPassant;
 }
 // -------------------------------------------------------------------------------------------------
 Bitboard Board::getPossibleMoves(Piece type, Color color, Square fromSquare) const
@@ -970,7 +775,7 @@ Piece Board::getPieceOn(Square sq) const
 {
   for (auto color = 0; color < 2; ++color) {
     for (auto pt = 0; pt < 6; ++pt) {
-      if (mPieces[color][pt] & sq) return Piece(pt);
+      if (mState.mPieces[color][pt] & sq) return Piece(pt);
     }
   }
   return Piece::None;
@@ -1028,7 +833,7 @@ Square Board::getCastlingRookSquare(Color color, CastleSide side) const
 // -------------------------------------------------------------------------------------------------
 Square Board::getEnPassantSquare() const
 {
-  return makeSquare(mEnPassant.lsb());
+  return makeSquare(mState.mEnPassant.lsb());
 }
 // -------------------------------------------------------------------------------------------------
 bool Board::isInsufficientMaterial() const
@@ -1098,34 +903,34 @@ bool Board::isMoveMate(Move const& move) const
 void Board::addPiece(Piece type, Color color, Square square)
 {
   mBoardChanged = true;
-  mPieces[color][type].setBit(square);
-  mAllPieces[color].setBit(square);
-  mOccupied.setBit(square);
+  mState.mPieces[color][type].setBit(square);
+  mState.mAllPieces[color].setBit(square);
+  mState.mOccupied.setBit(square);
 }
 // -------------------------------------------------------------------------------------------------
 void Board::removePiece(Piece type, Color color, Square square)
 {
   mBoardChanged = true;
-  mPieces[color][type].clearBit(square);
-  mAllPieces[color].clearBit(square);
-  mOccupied.clearBit(square);
+  mState.mPieces[color][type].clearBit(square);
+  mState.mAllPieces[color].clearBit(square);
+  mState.mOccupied.clearBit(square);
 }
 // -------------------------------------------------------------------------------------------------
 void Board::movePiece(Piece type, Color color, Square from, Square to)
 {
   if (type == Piece::King) {
-    mCastleRights[color] = CastleSide::None;
+    mState.mCastleRights[color] = CastleSide::None;
   } else if (type == Piece::Rook) {
     if (color == Color::White) {
       if (from == Square::A1)
-        mCastleRights[color] = mCastleRights[color] & ~CastleSide::Queen;
+        mState.mCastleRights[color] = mState.mCastleRights[color] & ~CastleSide::Queen;
       else if (from == Square::H1)
-        mCastleRights[color] = mCastleRights[color] & ~CastleSide::King;
+        mState.mCastleRights[color] = mState.mCastleRights[color] & ~CastleSide::King;
     } else {
       if (from == Square::A8)
-        mCastleRights[color] = mCastleRights[color] & ~CastleSide::Queen;
+        mState.mCastleRights[color] = mState.mCastleRights[color] & ~CastleSide::Queen;
       else if (from == Square::H8)
-        mCastleRights[color] = mCastleRights[color] & ~CastleSide::King;
+        mState.mCastleRights[color] = mState.mCastleRights[color] & ~CastleSide::King;
     }
   } else if (type == Piece::Pawn) {
     auto const indexFrom = makeIndex(from);
@@ -1139,56 +944,26 @@ void Board::movePiece(Piece type, Color color, Square from, Square to)
       auto const epSq  = (indexTo + (color == Color::White ? -8 : 8));
       if (getFile(toSq) == File::FileA) {
         if (pawns & (toSq + Direction::East)) {
-          mEnPassant.setBit(epSq);
+          mState.mEnPassant.setBit(epSq);
         }
       } else if (getFile(toSq) == File::FileH) {
         if (pawns & (toSq + Direction::West)) {
-          mEnPassant.setBit(epSq);
+          mState.mEnPassant.setBit(epSq);
         }
       } else {
         if (pawns & (toSq + Direction::West) || pawns & (toSq + Direction::East)) {
-          mEnPassant.setBit(epSq);
+          mState.mEnPassant.setBit(epSq);
         }
       }
     }
     // Reset fifty-rule clock on pawn moves
-    mHalfMoves = 0;
+    mState.mHalfMoves = 0;
   }
 
   removePiece(type, color, from);
   addPiece(type, color, to);
 
-  updateBitboards();
-}
-// -------------------------------------------------------------------------------------------------
-void Board::clearBitboards()
-{
-  for (Color color : {Color::White, Color::Black}) {
-    for (Piece Piece :
-         {Piece::Pawn, Piece::Knight, Piece::Bishop, Piece::Rook, Piece::Queen, Piece::King}) {
-      mPieces[color][Piece].clear();
-    }
-
-    mAllPieces[color].clear();
-  }
-
-  mEnPassant.clear();
-  mOccupied.clear();
-}
-// -------------------------------------------------------------------------------------------------
-void Board::updateBitboards()
-{
-  mAllPieces[Color::White] =
-      mPieces[Color::White][Piece::Pawn] | mPieces[Color::White][Piece::Rook] |
-      mPieces[Color::White][Piece::Knight] | mPieces[Color::White][Piece::Bishop] |
-      mPieces[Color::White][Piece::Queen] | mPieces[Color::White][Piece::King];
-
-  mAllPieces[Color::Black] =
-      mPieces[Color::Black][Piece::Pawn] | mPieces[Color::Black][Piece::Rook] |
-      mPieces[Color::Black][Piece::Knight] | mPieces[Color::Black][Piece::Bishop] |
-      mPieces[Color::Black][Piece::Queen] | mPieces[Color::Black][Piece::King];
-
-  mOccupied = mAllPieces[Color::White] | mAllPieces[Color::Black];
+  mState.updateNonPieceBitboards();
 }
 // -------------------------------------------------------------------------------------------------
 Bitboard Board::getAttackers(Color color, Square square) const
@@ -1241,4 +1016,4 @@ Bitboard Board::getQueenAttacksForSquare(Square square, Color color) const
   return attacks::getSlidingAttacks(Piece::Queen, square, getOccupied()) & ~getAllPieces(color);
 }
 // -------------------------------------------------------------------------------------------------
-}  // namespace cppgen
+}  // namespace chessgen

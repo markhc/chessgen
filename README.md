@@ -1,4 +1,4 @@
-# CppGen 
+# ChessGen 
 
 A chess move generator and validator written in modern C++
 
@@ -7,14 +7,14 @@ This is still an early version, so bugs might (and probably do) exist. Please fi
 ## Build Status
 | OS     | Windows                                                                                                                                 | Linux                                                                                                         |
 | ------ | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| Master | [![Build status](https://ci.appveyor.com/api/projects/status/fmrgv06nwvoc2rv4?svg=true)](https://ci.appveyor.com/project/MarkHC/cppgen) | [![Build Status](https://travis-ci.org/MarkHC/cppgen.svg?branch=master)](https://travis-ci.org/MarkHC/cppgen) |
+| Master | [![Build status](https://ci.appveyor.com/api/projects/status/fmrgv06nwvoc2rv4?svg=true)](https://ci.appveyor.com/project/MarkHC/chessgen) | [![Build Status](https://travis-ci.org/MarkHC/chessgen.svg?branch=master)](https://travis-ci.org/MarkHC/chessgen) |
 
 ## Installation
 
 Install
 ```
-git clone https://github.com/MarkHC/cppgen.git
-cd cppgen
+git clone https://github.com/MarkHC/chessgen.git
+cd chessgen
 mkdir build && cd build
 cmake .. 
 make install
@@ -22,10 +22,10 @@ make install
 
 Build tests
 ```
-git clone --recursive https://github.com/MarkHC/cppgen.git
-cd cppgen
+git clone --recursive https://github.com/MarkHC/chessgen.git
+cd chessgen
 mkdir build && cd build
-cmake -DCPPGEN_TEST=ON ..
+cmake -DCHESSGEN_TEST=ON ..
 make
 ```
 
@@ -34,8 +34,8 @@ make
 ### Generating moves
 
 ```cpp
-using cppgen::Board;
-using cppgen::GameOverReason;
+using chessgen::Board;
+using chessgen::GameOverReason;
 
 Board board; // Creates a game in its default initial position
 
@@ -87,7 +87,7 @@ Black has won!
 You can also give a FEN string to `Board`'s constructor to start the board at any other valid position:
 
 ```cpp
-using cppgen::Board;
+using chessgen::Board;
 
 Board board{
   "rn1qk2r/pbp2ppp/1p6/3n4/1b6/2NP1B2/PP2NPPP/R1BQK2R b KQkq - 3 9"
@@ -102,7 +102,7 @@ for(auto&& move : board.getLegalMoves()) {
 ### Validating a move
 
 ```cpp
-using cppgen::Board;
+using chessgen::Board;
 
 Board board;
 
@@ -115,9 +115,9 @@ assert(board.isValid("e4")); // assertion error
 You can also use from/to squares or castling sides:
 
 ```cpp
-using cppgen::Board;
-using cppgen::Square;
-using cppgen::CastleSide;
+using chessgen::Board;
+using chessgen::Square;
+using chessgen::CastleSide;
 
 Board board{
   "rn1qk2r/pbp2ppp/1p6/3n4/1b6/2NP1B2/PP2NPPP/R1BQK2R b KQkq - 3 9"

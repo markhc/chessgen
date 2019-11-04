@@ -1,24 +1,24 @@
 cmake_minimum_required(VERSION 3.13)
 
-project(cppgen CXX)
+project(chessgen CXX)
 
-set(CPPGEN_VERSION 1.0.0)
+set(CHESSGEN_VERSION 1.0.0)
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
-# Determine if cppgen is built as a subproject (using add_subdirectory)
+# Determine if chessgen is built as a subproject (using add_subdirectory)
 # or if it is the master project.
 set(MASTER_PROJECT OFF)
 if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
   set(MASTER_PROJECT ON)
 endif()
 
-option(CPPGEN_INSTALL "Generate the install target." ${MASTER_PROJECT})
-option(CPPGEN_TESTS   "Generate the test target." OFF)
-option(CPPGEN_ASAN    "Enable address sanitizer" OFF)
-option(CPPGEN_UBSAN   "Enable undefined behaviour sanitizer" OFF)
+option(CHESSGEN_INSTALL "Generate the install target." ${MASTER_PROJECT})
+option(CHESSGEN_TESTS   "Generate the test target." OFF)
+option(CHESSGEN_ASAN    "Enable address sanitizer" OFF)
+option(CHESSGEN_UBSAN   "Enable undefined behaviour sanitizer" OFF)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  set(CPPGEN_COMPILER_FLAGS 
+  set(CHESSGEN_COMPILER_FLAGS 
     # Enable "all" warnings
     -Wall -Wextra -Weverything -Wpedantic
     # But disable some particularly annoying ones
@@ -39,7 +39,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   )
   
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-  set(CPPGEN_COMPILER_FLAGS
+  set(CHESSGEN_COMPILER_FLAGS
     # Enable "all" warnings
     -Wall -Wextra -pedantic 
     # Plus some others not included in "all"
@@ -59,13 +59,13 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     -Wno-covered-switch-default
   )
 elseif (MSVC)
-  set(CPPGEN_COMPILER_FLAGS /W3)
+  set(CHESSGEN_COMPILER_FLAGS /W3)
 endif ()
 
 function(add_headers VAR)
   set(headers ${${VAR}})
   foreach (header ${ARGN})
-    set(headers ${headers} include/cppgen/${header})
+    set(headers ${headers} include/chessgen/${header})
   endforeach()
   set(${VAR} ${headers} PARENT_SCOPE)
 endfunction()
@@ -78,63 +78,63 @@ function(add_sources VAR)
   set(${VAR} ${headers} PARENT_SCOPE)
 endfunction()
 
-add_headers(CPPGEN_HEADERS 
+add_headers(CHESSGEN_HEADERS 
             attacks.hpp bitboard.hpp board.hpp 
-            config.hpp helpers.hpp move.hpp 
-            movegen.hpp platform.hpp types.hpp)
+            config.hpp fen.hpp game_state.hpp helpers.hpp 
+            move.hpp movegen.hpp platform.hpp types.hpp)
 
-add_library(cppgen src/attacks.cpp src/bitboard.cpp src/board.cpp src/move.cpp src/movegen.cpp)
-add_library(cppgen::cppgen ALIAS cppgen)
+add_library(chessgen src/attacks.cpp src/bitboard.cpp src/board.cpp src/fen.cpp src/game_state.cpp src/move.cpp src/movegen.cpp)
+add_library(chessgen::chessgen ALIAS chessgen)
 
-target_compile_features(cppgen PUBLIC cxx_std_17)
-target_compile_options(cppgen 
+target_compile_features(chessgen PUBLIC cxx_std_17)
+target_compile_options(chessgen 
   PRIVATE 
-    ${CPPGEN_COMPILER_FLAGS}
+    ${CHESSGEN_COMPILER_FLAGS}
 )
-target_include_directories(cppgen PUBLIC
+target_include_directories(chessgen PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
-set_target_properties(cppgen PROPERTIES
-  VERSION ${CPPGEN_VERSION} 
+set_target_properties(chessgen PROPERTIES
+  VERSION ${CHESSGEN_VERSION} 
   DEBUG_POSTFIX d)
   
 # Install targets.
-if(CPPGEN_INSTALL)
+if(CHESSGEN_INSTALL)
   include(GNUInstallDirs)
   include(CMakePackageConfigHelpers)
-  set(CPPGEN_CMAKE_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/cppgen CACHE STRING
+  set(CHESSGEN_CMAKE_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/chessgen CACHE STRING
       "Installation directory for cmake files, relative to ${CMAKE_INSTALL_PREFIX}.")
-  set(version_config ${PROJECT_BINARY_DIR}/cppgen-config-version.cmake)
-  set(project_config ${PROJECT_BINARY_DIR}/cppgen-config.cmake)
-  set(pkgconfig ${PROJECT_BINARY_DIR}/cppgen.pc)
-  set(targets_export_name cppgen-targets)
+  set(version_config ${PROJECT_BINARY_DIR}/chessgen-config-version.cmake)
+  set(project_config ${PROJECT_BINARY_DIR}/chessgen-config.cmake)
+  set(pkgconfig ${PROJECT_BINARY_DIR}/chessgen.pc)
+  set(targets_export_name chessgen-targets)
 
-  set (INSTALL_TARGETS cppgen)
+  set (INSTALL_TARGETS chessgen)
 
-  set(CPPGEN_LIB_DIR ${CMAKE_INSTALL_LIBDIR} CACHE STRING
+  set(CHESSGEN_LIB_DIR ${CMAKE_INSTALL_LIBDIR} CACHE STRING
       "Installation directory for libraries, relative to ${CMAKE_INSTALL_PREFIX}.")
 
-  set(CPPGEN_INC_DIR ${CMAKE_INSTALL_INCLUDEDIR}/cppgen CACHE STRING
+  set(CHESSGEN_INC_DIR ${CMAKE_INSTALL_INCLUDEDIR}/chessgen CACHE STRING
       "Installation directory for include files, relative to ${CMAKE_INSTALL_PREFIX}.")
 
-  set(CPPGEN_PKGCONFIG_DIR ${CMAKE_INSTALL_LIBDIR}/pkgconfig CACHE PATH
+  set(CHESSGEN_PKGCONFIG_DIR ${CMAKE_INSTALL_LIBDIR}/pkgconfig CACHE PATH
       "Installation directory for pkgconfig (.pc) files, relative to ${CMAKE_INSTALL_PREFIX}.")
 
   write_basic_package_version_file(
     ${version_config}
-    VERSION ${CPPGEN_VERSION}
+    VERSION ${CHESSGEN_VERSION}
     COMPATIBILITY AnyNewerVersion)
     
   configure_file(
-    "${PROJECT_SOURCE_DIR}/cmake/cppgen.pc.in"
+    "${PROJECT_SOURCE_DIR}/cmake/chessgen.pc.in"
     "${pkgconfig}"
     @ONLY)
 
   configure_package_config_file(
-    ${PROJECT_SOURCE_DIR}/cmake/cppgen-config.cmake.in
+    ${PROJECT_SOURCE_DIR}/cmake/chessgen-config.cmake.in
     ${project_config}
-    INSTALL_DESTINATION ${CPPGEN_CMAKE_DIR})
+    INSTALL_DESTINATION ${CHESSGEN_CMAKE_DIR})
 
   # Use a namespace because CMake provides better diagnostics for namespaced
   # imported targets.
@@ -143,22 +143,22 @@ if(CPPGEN_INSTALL)
 
   # Install version, config and target files.
   install(FILES ${project_config} ${version_config}
-          DESTINATION ${CPPGEN_CMAKE_DIR})
+          DESTINATION ${CHESSGEN_CMAKE_DIR})
 
   install(EXPORT ${targets_export_name} 
-          DESTINATION ${CPPGEN_CMAKE_DIR}
-          NAMESPACE cppgen::)
+          DESTINATION ${CHESSGEN_CMAKE_DIR}
+          NAMESPACE chessgen::)
 
   # Install the library and headers.
   install(TARGETS ${INSTALL_TARGETS} 
           EXPORT ${targets_export_name}
-          DESTINATION ${CPPGEN_LIB_DIR})
+          DESTINATION ${CHESSGEN_LIB_DIR})
 
-  install(FILES ${CPPGEN_HEADERS} DESTINATION ${CPPGEN_INC_DIR})
-  install(FILES "${pkgconfig}" DESTINATION "${CPPGEN_PKGCONFIG_DIR}")
+  install(FILES ${CHESSGEN_HEADERS} DESTINATION ${CHESSGEN_INC_DIR})
+  install(FILES "${pkgconfig}" DESTINATION "${CHESSGEN_PKGCONFIG_DIR}")
 endif ()
 
-if(CPPGEN_TESTS)
+if(CHESSGEN_TESTS)
   enable_testing()
   add_subdirectory(test)
 endif ()
