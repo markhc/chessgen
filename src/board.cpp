@@ -284,7 +284,7 @@ std::string Board::toSAN(Move const& move) const
   // If there are 2 pieces in position to make this move, we need to disambiguate it
   auto attackers = getAttackers(us, to) & getPieces(us, piece);
 
-  CG_ASSERT(!attackers.isZero());
+  CHESSGEN_ASSERT(!attackers.isZero());
 
   auto san = [piece]() {
     switch (piece) {
@@ -458,11 +458,11 @@ Move Board::fromSAN(std::string_view move) const
     }
   }
 
-  CG_ASSERT(std::isupper(move.back()));
+  CHESSGEN_ASSERT(std::isupper(move.back()));
 
   auto const piece = sanGetPieceType(stringPopBack(move));
 
-  CG_ASSERT(move.size() == 0);
+  CHESSGEN_ASSERT(move.size() == 0);
 
   if (fromRank == Rank::None || fromFile == File::None) {
     auto const result = findMoveIf([&](Move const& m) {
@@ -500,10 +500,10 @@ bool Board::makeMove(Move const& move)
   auto const to     = move.toSquare();
 
   if (!move.isCastling()) {
-    CG_ASSERT(from != Square::None);
-    CG_ASSERT(to != Square::None);
-    CG_ASSERT(getColorOfPieceOn(from) == us);
-    CG_ASSERT(isSquareEmpty(to) || getColorOfPieceOn(to) == them);
+    CHESSGEN_ASSERT(from != Square::None);
+    CHESSGEN_ASSERT(to != Square::None);
+    CHESSGEN_ASSERT(getColorOfPieceOn(from) == us);
+    CHESSGEN_ASSERT(isSquareEmpty(to) || getColorOfPieceOn(to) == them);
   }
 
   mState.clearEnPassant();
@@ -728,7 +728,7 @@ Bitboard Board::getKingBlockers(Color them) const
 
   auto ksq = getKingSquare(them);
 
-  CG_ASSERT(ksq != Square::None);
+  CHESSGEN_ASSERT(ksq != Square::None);
 
   auto const rooksOrQueens   = getPieces(us, Piece::Queen) | getPieces(us, Piece::Rook);
   auto const bishopsOrQueens = getPieces(us, Piece::Queen) | getPieces(us, Piece::Bishop);

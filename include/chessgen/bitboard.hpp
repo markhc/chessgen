@@ -76,17 +76,13 @@ public:
   }
   constexpr void setBit(int index)
   {
-    if (index > 63 || index < 0) {
-      CHESSGEN_ASSERT(!"Index out of range");
-    }
+    CHESSGEN_ASSERT(index < 64 && index >= 0);
 
     bits |= 1ULL << index;
   }
   constexpr void clearBit(int index)
   {
-    if (index > 63 || index < 0) {
-      CHESSGEN_ASSERT(!"Index out of range");
-    }
+    CHESSGEN_ASSERT(index < 64 && index >= 0);
 
     bits &= ~(1ULL << index);
   }

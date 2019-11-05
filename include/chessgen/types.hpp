@@ -78,23 +78,23 @@ enum class Rank : short {
 
 constexpr File operator++(File& f)
 {
-  CG_ASSERT(f <= File::FileH);
+  CHESSGEN_ASSERT(f <= File::FileH);
   return f = File(static_cast<int>(f) + 1);
 }
 constexpr File operator--(File& f)
 {
-  CG_ASSERT(f >= File::FileA);
+  CHESSGEN_ASSERT(f >= File::FileA);
   return f = File(static_cast<int>(f) - 1);
 }
 
 constexpr Rank operator++(Rank& r)
 {
-  CG_ASSERT(r <= Rank::Rank8);
+  CHESSGEN_ASSERT(r <= Rank::Rank8);
   return r = Rank(static_cast<int>(r) + 1);
 }
 constexpr Rank operator--(Rank& r)
 {
-  CG_ASSERT(r >= Rank::Rank1);
+  CHESSGEN_ASSERT(r >= Rank::Rank1);
   return r = Rank(static_cast<int>(r) - 1);
 }
 
@@ -119,8 +119,8 @@ constexpr Square makeSquare(int index)
 }
 constexpr Square makeSquare(File f, Rank r)
 {
-  CG_ASSERT(f >= File::FileA && f <= File::FileH);
-  CG_ASSERT(r >= Rank::Rank1 && r <= Rank::Rank8);
+  CHESSGEN_ASSERT(f >= File::FileA && f <= File::FileH);
+  CHESSGEN_ASSERT(r >= Rank::Rank1 && r <= Rank::Rank8);
   return Square((static_cast<int>(r) << 3) + static_cast<int>(f));
 }
 constexpr int makeIndex(Square square)
@@ -129,23 +129,23 @@ constexpr int makeIndex(Square square)
 }
 constexpr inline File getFile(Square s)
 {
-  CG_ASSERT(s >= Square::A1 && s <= Square::H8);
+  CHESSGEN_ASSERT(s >= Square::A1 && s <= Square::H8);
   return File(static_cast<int>(s) & 7);
 }
 constexpr inline Rank getRank(Square s)
 {
-  CG_ASSERT(s >= Square::A1 && s <= Square::H8);
+  CHESSGEN_ASSERT(s >= Square::A1 && s <= Square::H8);
   return Rank((static_cast<int>(s) >> 3));
 }
 
 constexpr Square operator++(Square& s)
 {
-  CG_ASSERT(s <= Square::H8);
+  CHESSGEN_ASSERT(s <= Square::H8);
   return s = Square(static_cast<int>(s) + 1);
 }
 constexpr Square operator--(Square& s)
 {
-  CG_ASSERT(s >= Square::A1);
+  CHESSGEN_ASSERT(s >= Square::A1);
   return s = Square(static_cast<int>(s) - 1);
 }
 constexpr Square operator+(Square s, Direction d)

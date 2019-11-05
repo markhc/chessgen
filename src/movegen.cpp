@@ -52,7 +52,7 @@ bool legalityCheck(Board const& board, Move const& move)
   auto const to   = move.toSquare();
   auto const ksq  = board.getKingSquare(us);
 
-  CG_ASSERT(ksq != Square::None);
+  CHESSGEN_ASSERT(ksq != Square::None);
 
   // En passant captures are a tricky special case. Because they are rather
   // uncommon, we do it simply by testing whether the king is attacked after
@@ -61,9 +61,9 @@ bool legalityCheck(Board const& board, Move const& move)
     auto const capsq    = to - (us == Color::White ? Direction::North : Direction::South);
     auto const occupied = (board.getOccupied() ^ from ^ capsq) | to;
 
-    CG_ASSERT(to == board.getEnPassantSquare());
-    CG_ASSERT(!(board.getPieces(~us, Piece::Pawn) & capsq).isZero());
-    CG_ASSERT(board.getPieceOn(to) == Piece::None);
+    CHESSGEN_ASSERT(to == board.getEnPassantSquare());
+    CHESSGEN_ASSERT(!(board.getPieces(~us, Piece::Pawn) & capsq).isZero());
+    CHESSGEN_ASSERT(board.getPieceOn(to) == Piece::None);
 
     return !(attacks::getSlidingAttacks(Piece::Rook, ksq, occupied) &
              (board.getPieces(~us, Piece::Queen) | board.getPieces(~us, Piece::Rook))) &&
@@ -92,7 +92,7 @@ void generateDiscoveredChecks(Board const& board, std::vector<Move>& moves)
 {
   constexpr auto Them = ~Us;
 
-  CG_ASSERT(board.getKingSquare(Them) != Square::None);
+  CHESSGEN_ASSERT(board.getKingSquare(Them) != Square::None);
 
   // Get all of our pieces that are blocking the attacks to the enemy king
   auto discoveredChecks = board.getKingBlockers(Them) & board.getAllPieces(Us);
@@ -125,7 +125,7 @@ void generateDiscoveredChecks(Board const& board, std::vector<Move>& moves)
 template <Color Us, Piece PieceType, GenType Type>
 void generatePieceMoves(Board const& board, Bitboard target, std::vector<Move>& moves)
 {
-  CG_ASSERT(PieceType != Piece::King);
+  CHESSGEN_ASSERT(PieceType != Piece::King);
 
   if constexpr (PieceType == Piece::Pawn) {
     return generatePawnMoves<Us, Type>(board, target, moves);
@@ -287,7 +287,7 @@ void generatePawnMoves(Board const& board, Bitboard target, std::vector<Move>& m
     if (board.getEnPassant()) {
       auto const ep = board.getEnPassantSquare();
 
-      CG_ASSERT(getRank(ep) == (Us == Color::White ? Rank::Rank6 : Rank::Rank3));
+      CHESSGEN_ASSERT(getRank(ep) == (Us == Color::White ? Rank::Rank6 : Rank::Rank3));
 
       auto pawnSquare = ep - Up;
 
@@ -300,7 +300,7 @@ void generatePawnMoves(Board const& board, Bitboard target, std::vector<Move>& m
 
       // En passant squares are not recorded if there is no pawn in place to capture the passant
       // pawn so b1 should be always != 0
-      CG_ASSERT(b1);
+      CHESSGEN_ASSERT(b1);
 
       while (b1) {
         moves.emplace_back(Move::makeEnPassant(makeSquare(b1.popLsb()), ep));
@@ -316,9 +316,9 @@ void generatePawnMoves(Board const& board, Bitboard target, std::vector<Move>& m
 template <GenType Type>
 auto generateMoves(Board const& board) -> std::vector<Move>
 {
-  CG_ASSERT(Type == GenType::Captures || Type == GenType::Quiets || Type == GenType::NonEvasions);
-  CG_ASSERT(!board.isInCheck());
-  CG_ASSERT(!board.getCheckers());
+  CHESSGEN_ASSERT(Type == GenType::Captures || Type == GenType::Quiets || Type == GenType::NonEvasions);
+  CHESSGEN_ASSERT(!board.isInCheck());
+  CHESSGEN_ASSERT(!board.getCheckers());
 
   auto       moves = std::vector<Move>{};
   auto const us    = board.getActivePlayer();
@@ -350,8 +350,8 @@ auto generateMoves<GenType::QuietChecks>(Board const& board) -> std::vector<Move
   auto       moves = std::vector<Move>{};
   auto const us    = board.getActivePlayer();
 
-  CG_ASSERT(!board.isInCheck());
-  CG_ASSERT(!board.getCheckers());
+  CHESSGEN_ASSERT(!board.isInCheck());
+  CHESSGEN_ASSERT(!board.getCheckers());
 
   if (us == Color::White) {
     generateDiscoveredChecks<Color::White>(board, moves);
@@ -369,9 +369,9 @@ auto generateMoves<GenType::Evasions>(Board const& board) -> std::vector<Move>
 {
   auto const us = board.getActivePlayer();
 
-  CG_ASSERT(board.getKingSquare(us) != Square::None);
-  CG_ASSERT(board.isInCheck());
-  CG_ASSERT(board.getCheckers());
+  CHESSGEN_ASSERT(board.getKingSquare(us) != Square::None);
+  CHESSGEN_ASSERT(board.isInCheck());
+  CHESSGEN_ASSERT(board.getCheckers());
 
   auto moves         = std::vector<Move>{};
   auto ksq           = board.getKingSquare(us);
@@ -418,7 +418,7 @@ auto generateMoves<GenType::Legal>(Board const& board) -> std::vector<Move>
   auto const pinnedPieces = board.getKingBlockers(us) & board.getAllPieces(us);
   auto const ksq          = board.getKingSquare(us);
 
-  CG_ASSERT(ksq != Square::None);
+  CHESSGEN_ASSERT(ksq != Square::None);
 
   auto moves = std::vector<Move>{};
   if (board.isInCheck())
