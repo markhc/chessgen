@@ -62,28 +62,14 @@ elseif (MSVC)
   set(CHESSGEN_COMPILER_FLAGS /W3)
 endif ()
 
-function(add_headers VAR)
-  set(headers ${${VAR}})
-  foreach (header ${ARGN})
-    set(headers ${headers} include/chessgen/${header})
-  endforeach()
-  set(${VAR} ${headers} PARENT_SCOPE)
-endfunction()
+add_library(chessgen 
+            src/attacks.cpp 
+            src/bitboard.cpp 
+            src/board.cpp
+            src/board_state.cpp
+            src/movegen.cpp
+            src/san.cpp)
 
-function(add_sources VAR)
-  set(sources ${${VAR}})
-  foreach (source ${ARGN})
-    set(sources ${sources} src/${source})
-  endforeach()
-  set(${VAR} ${headers} PARENT_SCOPE)
-endfunction()
-
-add_headers(CHESSGEN_HEADERS 
-            attacks.hpp bitboard.hpp board.hpp 
-            config.hpp fen.hpp game_state.hpp helpers.hpp 
-            move.hpp movegen.hpp platform.hpp types.hpp)
-
-add_library(chessgen src/attacks.cpp src/bitboard.cpp src/board.cpp src/fen.cpp src/game_state.cpp src/move.cpp src/movegen.cpp)
 add_library(chessgen::chessgen ALIAS chessgen)
 
 target_compile_features(chessgen PUBLIC cxx_std_17)

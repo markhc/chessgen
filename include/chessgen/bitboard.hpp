@@ -88,11 +88,11 @@ public:
   }
   constexpr void setBit(Square s)
   {
-    setBit(makeIndex(s));
+    setBit(int(s));
   }
   constexpr void clearBit(Square s)
   {
-    clearBit(makeIndex(s));
+    clearBit(int(s));
   }
   constexpr bool moreThanOne() const
   {
@@ -228,15 +228,15 @@ constexpr Bitboard SquareBB[64] = {
 
 constexpr Bitboard operator&(Bitboard b, Square s)
 {
-  return b & SquareBB[makeIndex(s)];
+  return b & SquareBB[int(s)];
 }
 constexpr Bitboard operator|(Bitboard b, Square s)
 {
-  return b | SquareBB[makeIndex(s)];
+  return b | SquareBB[int(s)];
 }
 constexpr Bitboard operator^(Bitboard b, Square s)
 {
-  return b ^ SquareBB[makeIndex(s)];
+  return b ^ SquareBB[int(s)];
 }
 
 namespace Bitboards

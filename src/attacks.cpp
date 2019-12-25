@@ -94,15 +94,15 @@ class Rays
 public:
   auto& operator[](Direction d)
   {
-    return mRays[makeIndex(d)];
+    return mRays[int(d)];
   }
   auto const& operator[](Direction d) const
   {
-    return mRays[makeIndex(d)];
+    return mRays[int(d)];
   }
 
 private:
-  Bitboard mRays[makeIndex(Direction::Count)][64];
+  Bitboard mRays[int(Direction::Count)][64];
 };
 
 static Rays     _rays;
@@ -151,7 +151,7 @@ void precomputeTables()
     for (auto&& pt : {Piece::Bishop, Piece::Rook}) {
       for (Square s2 = Square::A1; s2 <= Square::H8; ++s2) {
         if (getSlidingAttacks(pt, s1, Bitboard{}) & s2) {
-          _libeBBs[makeIndex(s1)][makeIndex(s2)] =
+          _libeBBs[int(s1)][int(s2)] =
               ((getSlidingAttacks(pt, s1, Bitboard{}) & getSlidingAttacks(pt, s2, Bitboard{})) | s1) |
               s2;
         }
@@ -181,23 +181,23 @@ void precomputeRays()
 // -------------------------------------------------------------------------------------------------
 Bitboard getLineBetween(Square s1, Square s2)
 {
-  return _libeBBs[makeIndex(s1)][makeIndex(s2)];
+  return _libeBBs[int(s1)][int(s2)];
 }
 // -------------------------------------------------------------------------------------------------
 Bitboard getNonSlidingAttacks(Piece piece, Square from, Color color)
 {
-  return _nonSlidingAttacks[color][piece][makeIndex(from)];
+  return _nonSlidingAttacks[static_cast<int>(color)][static_cast<int>(piece)][static_cast<int>(from)];
 }
 // -------------------------------------------------------------------------------------------------
 Bitboard getSlidingAttacks(Piece piece, Square from, Bitboard blockers)
 {
   switch (piece) {
     case Piece::Bishop:
-      return getBishopAttacks(makeIndex(from), blockers);
+      return getBishopAttacks(int(from), blockers);
     case Piece::Rook:
-      return getRookAttacks(makeIndex(from), blockers);
+      return getRookAttacks(int(from), blockers);
     case Piece::Queen:
-      return getBishopAttacks(makeIndex(from), blockers) | getRookAttacks(makeIndex(from), blockers);      
+      return getBishopAttacks(int(from), blockers) | getRookAttacks(int(from), blockers);      
     case Piece::King:
     case Piece::Pawn:
     case Piece::Knight:
@@ -215,8 +215,8 @@ void initPawnAttacks()
     auto const whiteAttackBb = ((start << 9) & ~Bitboards::FileA) | ((start << 7) & ~Bitboards::FileH);
     auto const blackAttackBb = ((start >> 9) & ~Bitboards::FileH) | ((start >> 7) & ~Bitboards::FileA);
 
-    _nonSlidingAttacks[Color::White][Piece::Pawn][i] = Bitboard{whiteAttackBb};
-    _nonSlidingAttacks[Color::Black][Piece::Pawn][i] = Bitboard{blackAttackBb};
+    _nonSlidingAttacks[int(Color::White)][int(Piece::Pawn)][i] = Bitboard{whiteAttackBb};
+    _nonSlidingAttacks[int(Color::Black)][int(Piece::Pawn)][i] = Bitboard{blackAttackBb};
   }
 }
 // -------------------------------------------------------------------------------------------------
@@ -231,8 +231,8 @@ void initKnightAttacks()
         (((start << 6) | (start >> 10)) & ~(Bitboards::FileG | Bitboards::FileH)) |  // Left 2
         (((start >> 6) | (start << 10)) & ~(Bitboards::FileA | Bitboards::FileB));   // Right 2
 
-    _nonSlidingAttacks[Color::White][Piece::Knight][i] =
-        _nonSlidingAttacks[Color::Black][Piece::Knight][i] = Bitboard{attackBb};
+    _nonSlidingAttacks[int(Color::White)][int(Piece::Knight)][i] =
+        _nonSlidingAttacks[int(Color::Black)][int(Piece::Knight)][i] = Bitboard{attackBb};
   }
 }
 // -------------------------------------------------------------------------------------------------
@@ -245,8 +245,8 @@ void initKingAttacks()
                           (((start << 9) | (start >> 7) | (start << 1)) & (~Bitboards::FileA)) |
                           ((start >> 8) | (start << 8));
 
-    _nonSlidingAttacks[Color::White][Piece::King][i] =
-        _nonSlidingAttacks[Color::Black][Piece::King][i] = Bitboard{attackBb};
+    _nonSlidingAttacks[int(Color::White)][int(Piece::King)][i] =
+        _nonSlidingAttacks[int(Color::Black)][int(Piece::King)][i] = Bitboard{attackBb};
   }
 }
 // -------------------------------------------------------------------------------------------------

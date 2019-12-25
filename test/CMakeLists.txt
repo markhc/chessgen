@@ -1,9 +1,7 @@
 add_executable(unit_tests
-  main.cpp
-  test_attacks.cpp
   test_bitboard.cpp
-  test_fen.cpp
-  test_san.cpp
+  test_full_games.cpp
+  main.cpp
 )
 
 if(CHESSGEN_ASAN)
@@ -28,7 +26,6 @@ elseif(CHESSGEN_UBSAN)
 
     set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} -fsanitize=undefined)
 endif()
-
 
 include(../cmake/gtest.cmake)
 find_package(Threads)

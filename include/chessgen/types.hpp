@@ -76,6 +76,21 @@ enum class Rank : short {
   None = Count,
 };
 
+enum class GameOverReason {
+  OnGoing,
+  Mate,
+  Threefold,
+  Stalemate,
+  InsuffMaterial,
+};
+
+enum class ChessVariant {
+  Standard,
+  Chess960,
+  Antichess,
+  ThreeCheck,
+};
+
 constexpr File operator++(File& f)
 {
   CHESSGEN_ASSERT(f <= File::FileH);
@@ -86,7 +101,6 @@ constexpr File operator--(File& f)
   CHESSGEN_ASSERT(f >= File::FileA);
   return f = File(static_cast<int>(f) - 1);
 }
-
 constexpr Rank operator++(Rank& r)
 {
   CHESSGEN_ASSERT(r <= Rank::Rank8);
@@ -122,10 +136,6 @@ constexpr Square makeSquare(File f, Rank r)
   CHESSGEN_ASSERT(f >= File::FileA && f <= File::FileH);
   CHESSGEN_ASSERT(r >= Rank::Rank1 && r <= Rank::Rank8);
   return Square((static_cast<int>(r) << 3) + static_cast<int>(f));
-}
-constexpr int makeIndex(Square square)
-{
-  return int(square);
 }
 constexpr inline File getFile(Square s)
 {
@@ -199,29 +209,25 @@ constexpr Square operator-(Square s, Direction d)
       return s;
   }
 }
-// Pieces are often used as an index into a piece array
-// I don't like using C enums, but C++ scoped enums
-// cannot be implicitly converted to integers, which would
-// require casts for every access into the arrays
-// This is my middle ground solution.
-struct PieceEnum {
-  enum Piece_ : short {
-    Pawn,
-    Bishop,
-    Knight,
-    Rook,
-    Queen,
-    King,
-    Count,
-    None = Count,
-  };
-};
-using Piece = PieceEnum::Piece_;
 
-enum Color {
+enum class Piece : short {
+  Pawn,
+  Bishop,
+  Knight,
+  Rook,
+  Queen,
+  King,
+  Count,
+  None = Count,
+};
+
+enum class Color {
   White,
   Black,
+  Count,
+  None = Count
 };
+
 constexpr inline Color operator~(Color c)
 {
   return c == Color::White ? Color::Black : Color::White;
@@ -268,11 +274,6 @@ inline std::string to_string(Piece p)
   }
 }
 
-template <class E>
-constexpr int makeIndex(E e)
-{
-  return static_cast<int>(e);
-}
 inline std::string to_string(chessgen::Rank r)
 {
   return std::string{static_cast<char>(static_cast<int>(r) + 1 + '0')};

@@ -19,29 +19,45 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#include "chessgen/game_state.hpp"
+#pragma once
+
+#include <map>
+#include <string>
+#include <string_view>
+
+#include "types.hpp"
 
 namespace chessgen
 {
-// -------------------------------------------------------------------------------------------------
-void GameState::clearEnPassant()
+class SANMove
 {
-  mEnPassant.clear();
-}
-// -------------------------------------------------------------------------------------------------
-void GameState::updateNonPieceBitboards()
-{
-  mAllPieces[Color::White] =
-      mPieces[Color::White][Piece::Pawn] | mPieces[Color::White][Piece::Rook] |
-      mPieces[Color::White][Piece::Knight] | mPieces[Color::White][Piece::Bishop] |
-      mPieces[Color::White][Piece::Queen] | mPieces[Color::White][Piece::King];
+public:
+  SANMove() = default;
 
-  mAllPieces[Color::Black] =
-      mPieces[Color::Black][Piece::Pawn] | mPieces[Color::Black][Piece::Rook] |
-      mPieces[Color::Black][Piece::Knight] | mPieces[Color::Black][Piece::Bishop] |
-      mPieces[Color::Black][Piece::Queen] | mPieces[Color::Black][Piece::King];
+  static SANMove parse(std::string_view movetext);
+  
+  Piece  piece() const { return mPiece; }
+  Square toSquare() const { return mToSquare; }
+  File   fromFile() const { return mFromFile; }
+  Rank   fromRank() const { return mFromRank; }
 
-  mOccupied = mAllPieces[Color::White] | mAllPieces[Color::Black];
-}
-// -------------------------------------------------------------------------------------------------
+  bool isPromotion() const { return mPromoted != Piece::None;  }
+  Piece promotedTo() const { return mPromoted; }
+
+  bool       isCastling() const { return mCastling != CastleSide::None; }
+  CastleSide getCastleSide() const { return mCastling; }
+
+
+private:
+  SANMove(File fromFile, Rank fromRank, Square toSquare, Piece promotedTo);
+  SANMove(Piece piece, File fromFile, Rank fromRank, Square toSquare);
+  SANMove(CastleSide castling);
+
+  Piece      mPiece;
+  File       mFromFile;
+  Rank       mFromRank;
+  Square     mToSquare;
+  Piece      mPromoted;
+  CastleSide mCastling;
+};
 }  // namespace chessgen

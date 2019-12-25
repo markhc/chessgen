@@ -1,30 +1,46 @@
-//
-// Copyright (C) 2019-2019 markhc
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy of
-// this software and associated documentation files (the "Software"), to deal in
-// the Software without restriction, including without limitation the rights to
-// use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-// the Software, and to permit persons to whom the Software is furnished to do so,
-// subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all
-// copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-//
 
 #include <gtest/gtest.h>
-#include <iomanip>
-#include <iostream>
 
-int main(int argc, char** argv)
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
+//using namespace chessgen;
+//
+//static int notationToIndex(std::string_view notation)
+//{
+//  return static_cast<int>(makeSquare(File(notation[0] - 'a'), Rank(notation[1] - '1')));
+//}
+//static std::string indexToNotation(int index)
+//{
+//  using std::to_string;
+//
+//  return to_string(Square(index));
+//
+//}
+//int main()
+//{
+//  using std::to_string;
+//
+//  Board board("rnbqkb1r/pp2pppp/2p2n2/3p4/3P4/4PN2/PPP2PPP/RNBQKB1R w KQkq - 2 4");
+//
+//  std::string moves[] = {"Bd3", "Nbd7", "O-O", "h6"};
+//
+//  std::cout << board.prettyPrint(false) << std::endl;
+//
+//  for (auto move : moves) {
+//    if (board.isValid(move)) {
+//      board.makeMove(move);
+//    } else {
+//      std::cout << "\nInvalid Move!";
+//      break;
+//    }
+//
+//    std::cout << board.prettyPrint(false) << std::endl;
+//    std::cout << board.getFen() << std::endl;
+//  }
+//
+//  for (auto state : board.getGameHistory()) {
+//    if (state.boardState.getActivePlayer() == Color::White) {
+//      std::cout << std::endl << state.boardState.getFullMove() << ". ";
+//    }
+//    if (state.movePlayed.has_value())
+//      std::cout << state.boardState.toSAN(state.movePlayed.value()) << " ";
+//  }
+//}

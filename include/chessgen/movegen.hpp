@@ -22,11 +22,11 @@
 #pragma once
 
 #include <vector>
-#include "move.hpp"
+#include "ucimove.hpp"
 
 namespace chessgen
 {
-class Board;
+class BoardState;
 
 enum class GenType {
   Quiets,       // Generates all pseudo-legal non-captures and underpromotions
@@ -44,6 +44,6 @@ enum class GenType {
  * @returns The move list
  */
 template <GenType Type>
-auto generateMoves(Board const& board) -> std::vector<Move>;
+auto generateMoves(BoardState const& state) -> std::vector<UCIMove>;
 
 }  // namespace chessgen

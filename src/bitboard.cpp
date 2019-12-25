@@ -29,8 +29,8 @@ namespace chessgen
 Bitboard Bitboard::getLineBetween(Square a, Square b)
 {
   return attacks::getLineBetween(a, b) &
-         ((Bitboards::AllSquares << (makeIndex(a) + (makeIndex(a) < makeIndex(b)))) ^
-          (Bitboards::AllSquares << (makeIndex(b) + !(makeIndex(a) < makeIndex(b)))));
+         ((Bitboards::AllSquares << (int(a) + (int(a) < int(b)))) ^
+          (Bitboards::AllSquares << (int(b) + !(int(a) < int(b)))));
 }
 std::string Bitboard::prettyPrint() const
 {
