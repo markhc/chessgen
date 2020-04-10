@@ -59,17 +59,17 @@ bool legalityCheck(class BoardState const& state, UCIMove const& move)
   // uncommon, we do it simply by testing whether the king is attacked after
   // the move is made.
   if (move.isEnPassant()) {
-    auto const capsq    = to - (us == Color::White ? Direction::North : Direction::South);
+    auto const capsq    = to - (us == ColorWhite ? Direction::North : Direction::South);
     auto const occupied = (state.getOccupied() ^ from ^ capsq) | to;
 
     CHESSGEN_ASSERT(to == state.getEnPassantSquare());
-    CHESSGEN_ASSERT(!(state.getPieces(~us, Piece::Pawn) & capsq).isZero());
-    CHESSGEN_ASSERT(state.getPieceOn(to).type == Piece::None);
+    CHESSGEN_ASSERT(!(state.getPieces(~us, PiecePawn) & capsq).isZero());
+    CHESSGEN_ASSERT(state.getPieceOn(to).type == PieceNone);
 
-    return !(attacks::getSlidingAttacks(Piece::Rook, ksq, occupied) &
-             (state.getPieces(~us, Piece::Queen) | state.getPieces(~us, Piece::Rook))) &&
-           !(attacks::getSlidingAttacks(Piece::Bishop, ksq, occupied) &
-             (state.getPieces(~us, Piece::Queen) | state.getPieces(~us, Piece::Bishop)));
+    return !(attacks::getSlidingAttacks(PieceRook, ksq, occupied) &
+             (state.getPieces(~us, PieceQueen) | state.getPieces(~us, PieceRook))) &&
+           !(attacks::getSlidingAttacks(PieceBishop, ksq, occupied) &
+             (state.getPieces(~us, PieceQueen) | state.getPieces(~us, PieceBishop)));
   }
 
   // Castling moves already already checked for legality
@@ -103,7 +103,7 @@ void generateDiscoveredChecks(class BoardState const& state, std::vector<UCIMove
     auto const piece      = state.getPieceOn(fromSquare).type;
 
     // Handled in the special generatePawnMoves function
-    if (piece == Piece::Pawn) continue;
+    if (piece == PiecePawn) continue;
 
     // Gets the possible squares this piece can move to without capturing
     auto b = state.getPossibleMoves(piece, Us, fromSquare) & state.getUnoccupied();
@@ -111,10 +111,10 @@ void generateDiscoveredChecks(class BoardState const& state, std::vector<UCIMove
     // If the piece to move is our king, move it somewhere it won't keep blocking us
     // Other pieces (except pawns) will always move somewhere they won't block
     // so there is no need to check for them
-    if (piece == Piece::King) {
+    if (piece == PieceKing) {
       auto const kingSquare = state.getKingSquare(Them);
 
-      b &= ~attacks::getSlidingAttacks(Piece::Queen, kingSquare, Bitboard{});
+      b &= ~attacks::getSlidingAttacks(PieceQueen, kingSquare, Bitboard{});
     }
 
     while (b) {
@@ -126,9 +126,9 @@ void generateDiscoveredChecks(class BoardState const& state, std::vector<UCIMove
 template <Color Us, Piece PieceType, GenType Type>
 void generatePieceMoves(class BoardState const& state, Bitboard target, std::vector<UCIMove>& moves)
 {
-  CHESSGEN_ASSERT(PieceType != Piece::King);
+  CHESSGEN_ASSERT(PieceType != PieceKing);
 
-  if constexpr (PieceType == Piece::Pawn) {
+  if constexpr (PieceType == PiecePawn) {
     return generatePawnMoves<Us, Type>(state, target, moves);
   }
 
@@ -155,14 +155,14 @@ void makePromotions([[maybe_unused]] BoardState const&     state,
                     [[maybe_unused]] std::vector<UCIMove>& moves)
 {
   if constexpr (Type == GenType::Captures || Type == GenType::Evasions || Type == GenType::NonEvasions)
-    moves.emplace_back(to - D, to, Piece::Queen);
+    moves.emplace_back(to - D, to, PieceQueen);
 
   if constexpr (Type == GenType::Quiets || Type == GenType::Evasions || Type == GenType::NonEvasions) {
-    moves.emplace_back(to - D, to, Piece::Rook);
-    moves.emplace_back(to - D, to, Piece::Bishop);
-    moves.emplace_back(to - D, to, Piece::Knight);
-  } else if (Type == GenType::QuietChecks && (state.getPossibleMoves(Piece::Knight, Us, to) & ksq)) {
-    moves.emplace_back(to - D, to, Piece::Knight);
+    moves.emplace_back(to - D, to, PieceRook);
+    moves.emplace_back(to - D, to, PieceBishop);
+    moves.emplace_back(to - D, to, PieceKnight);
+  } else if (Type == GenType::QuietChecks && (state.getPossibleMoves(PieceKnight, Us, to) & ksq)) {
+    moves.emplace_back(to - D, to, PieceKnight);
   }
 }
 // -------------------------------------------------------------------------------------------------
@@ -170,16 +170,16 @@ template <Color Us, GenType Type>
 void generatePawnMoves(class BoardState const& state, Bitboard target, std::vector<UCIMove>& moves)
 {
   // clang-format off
-  [[maybe_unused]] constexpr auto Them    = (Us == Color::White ? Color::Black : Color::White);
-  [[maybe_unused]] constexpr auto Rank7BB = (Us == Color::White ? Bitboards::Rank7 : Bitboards::Rank2);
-  [[maybe_unused]] constexpr auto Rank3BB = (Us == Color::White ? Bitboards::Rank3 : Bitboards::Rank6);
-  [[maybe_unused]] constexpr auto Up      = (Us == Color::White ? Direction::North : Direction::South);
-  [[maybe_unused]] constexpr auto UpRight = (Us == Color::White ? Direction::NorthEast : Direction::SouthWest);
-  [[maybe_unused]] constexpr auto UpLeft  = (Us == Color::White ? Direction::NorthWest : Direction::SouthEast);
+  [[maybe_unused]] constexpr auto Them    = (Us == ColorWhite ? ColorBlack : ColorWhite);
+  [[maybe_unused]] constexpr auto Rank7BB = (Us == ColorWhite ? Bitboards::Rank7 : Bitboards::Rank2);
+  [[maybe_unused]] constexpr auto Rank3BB = (Us == ColorWhite ? Bitboards::Rank3 : Bitboards::Rank6);
+  [[maybe_unused]] constexpr auto Up      = (Us == ColorWhite ? Direction::North : Direction::South);
+  [[maybe_unused]] constexpr auto UpRight = (Us == ColorWhite ? Direction::NorthEast : Direction::SouthWest);
+  [[maybe_unused]] constexpr auto UpLeft  = (Us == ColorWhite ? Direction::NorthWest : Direction::SouthEast);
   // clang-format on
 
-  auto pawnsOn7    = state.getPieces(Us, Piece::Pawn) & Rank7BB;
-  auto pawnsNotOn7 = state.getPieces(Us, Piece::Pawn) & ~Rank7BB;
+  auto pawnsOn7    = state.getPieces(Us, PiecePawn) & Rank7BB;
+  auto pawnsNotOn7 = state.getPieces(Us, PiecePawn) & ~Rank7BB;
 
   auto const enemies = [&]() {
     if constexpr (Type == GenType::Evasions)
@@ -208,8 +208,8 @@ void generatePawnMoves(class BoardState const& state, Bitboard target, std::vect
     if constexpr (Type == GenType::QuietChecks) {
       auto const ksq = state.getKingSquare(Them);
 
-      singleMoves &= state.getPossibleMoves(Piece::Pawn, Them, ksq);
-      doubleMoves &= state.getPossibleMoves(Piece::Pawn, Them, ksq);
+      singleMoves &= state.getPossibleMoves(PiecePawn, Them, ksq);
+      doubleMoves &= state.getPossibleMoves(PiecePawn, Them, ksq);
 
       // Add pawn pushes which give discovered check. This is possible only
       // if the pawn is not on the same file as the enemy king, because we
@@ -288,7 +288,7 @@ void generatePawnMoves(class BoardState const& state, Bitboard target, std::vect
     if (state.getEnPassant()) {
       auto const ep = state.getEnPassantSquare();
 
-      CHESSGEN_ASSERT(getRank(ep) == (Us == Color::White ? Rank::Rank6 : Rank::Rank3));
+      CHESSGEN_ASSERT(getRank(ep) == (Us == ColorWhite ? Rank::Rank6 : Rank::Rank3));
 
       auto pawnSquare = ep - Up;
 
@@ -297,7 +297,7 @@ void generatePawnMoves(class BoardState const& state, Bitboard target, std::vect
       // is a discovery check and we are forced to do otherwise.
       if (Type == GenType::Evasions && !(target & pawnSquare)) return;
 
-      b1 = pawnsNotOn7 & state.getPossibleMoves(Piece::Pawn, Them, ep);
+      b1 = pawnsNotOn7 & state.getPossibleMoves(PiecePawn, Them, ep);
 
       // En passant squares are not recorded if there is no pawn in place to capture the passant
       // pawn so b1 should be always != 0
@@ -334,10 +334,10 @@ auto generateMoves(class BoardState const& state) -> std::vector<UCIMove>
     return Bitboard{0};
   }();
 
-  if (us == Color::White)
-    generateAll<Color::White, Type>(state, target, moves);
+  if (us == ColorWhite)
+    generateAll<ColorWhite, Type>(state, target, moves);
   else
-    generateAll<Color::Black, Type>(state, target, moves);
+    generateAll<ColorBlack, Type>(state, target, moves);
 
   return moves;
 }
@@ -354,12 +354,12 @@ auto generateMoves<GenType::QuietChecks>(class BoardState const& state) -> std::
   CHESSGEN_ASSERT(!state.isInCheck());
   CHESSGEN_ASSERT(!state.getCheckers());
 
-  if (us == Color::White) {
-    generateDiscoveredChecks<Color::White>(state, moves);
-    generateAll<Color::White, GenType::QuietChecks>(state, state.getUnoccupied(), moves);
+  if (us == ColorWhite) {
+    generateDiscoveredChecks<ColorWhite>(state, moves);
+    generateAll<ColorWhite, GenType::QuietChecks>(state, state.getUnoccupied(), moves);
   } else {
-    generateDiscoveredChecks<Color::Black>(state, moves);
-    generateAll<Color::Black, GenType::QuietChecks>(state, state.getUnoccupied(), moves);
+    generateDiscoveredChecks<ColorBlack>(state, moves);
+    generateAll<ColorBlack, GenType::QuietChecks>(state, state.getUnoccupied(), moves);
   }
 
   return moves;
@@ -378,8 +378,8 @@ auto generateMoves<GenType::Evasions>(class BoardState const& state) -> std::vec
   auto ksq           = state.getKingSquare(us);
   auto sliderAttacks = Bitboard{};
   auto sliders       = state.getCheckers() &       //
-                 ~state.getPieces(Piece::Pawn) &   //
-                 ~state.getPieces(Piece::Knight);  //
+                 ~state.getPieces(PiecePawn) &   //
+                 ~state.getPieces(PieceKnight);  //
 
   // Find all the squares attacked by slider checkers. We will remove them from
   // the king evasions in order to skip known illegal moves, which avoids any
@@ -390,7 +390,7 @@ auto generateMoves<GenType::Evasions>(class BoardState const& state) -> std::vec
   }
 
   // Generate evasions for king, capture and non capture moves
-  auto b = state.getPossibleMoves(Piece::King, us, ksq) & ~state.getAllPieces(us) & ~sliderAttacks;
+  auto b = state.getPossibleMoves(PieceKing, us, ksq) & ~state.getAllPieces(us) & ~sliderAttacks;
   while (b) {
     moves.emplace_back(ksq, makeSquare(b.popLsb()));
   }
@@ -404,10 +404,10 @@ auto generateMoves<GenType::Evasions>(class BoardState const& state) -> std::vec
   auto const checksq = makeSquare(checkers.lsb());
   auto const target  = Bitboard::getLineBetween(checksq, ksq) | checksq;
 
-  if (us == Color::White)
-    generateAll<Color::White, GenType::Evasions>(state, target, moves);
+  if (us == ColorWhite)
+    generateAll<ColorWhite, GenType::Evasions>(state, target, moves);
   else
-    generateAll<Color::Black, GenType::Evasions>(state, target, moves);
+    generateAll<ColorBlack, GenType::Evasions>(state, target, moves);
 
   return moves;
 }
@@ -450,15 +450,15 @@ auto generateMoves<GenType::Legal>(class BoardState const& state) -> std::vector
 template <Color Us, GenType Type>
 void generateAll(class BoardState const& state, Bitboard target, std::vector<UCIMove>& moves)
 {
-  generatePieceMoves<Us, Piece::Pawn, Type>(state, target, moves);
-  generatePieceMoves<Us, Piece::Knight, Type>(state, target, moves);
-  generatePieceMoves<Us, Piece::Bishop, Type>(state, target, moves);
-  generatePieceMoves<Us, Piece::Rook, Type>(state, target, moves);
-  generatePieceMoves<Us, Piece::Queen, Type>(state, target, moves);
+  generatePieceMoves<Us, PiecePawn, Type>(state, target, moves);
+  generatePieceMoves<Us, PieceKnight, Type>(state, target, moves);
+  generatePieceMoves<Us, PieceBishop, Type>(state, target, moves);
+  generatePieceMoves<Us, PieceRook, Type>(state, target, moves);
+  generatePieceMoves<Us, PieceQueen, Type>(state, target, moves);
 
   if constexpr (Type != GenType::QuietChecks && Type != GenType::Evasions) {
     auto ksq = state.getKingSquare(Us);
-    auto b   = state.getPossibleMoves(Piece::King, Us, ksq) & target;
+    auto b   = state.getPossibleMoves(PieceKing, Us, ksq) & target;
     while (b) {
       moves.emplace_back(ksq, makeSquare(b.popLsb()));
     }

@@ -39,7 +39,7 @@ public:
   }
   bool isPromotion() const
   {
-    return mPromotedTo != Piece::None;
+    return mPromotedTo != PieceNone;
   }
   Piece promotedTo() const
   {
@@ -58,7 +58,7 @@ private:
   Square     mFromSquare{Square::None};
   Square     mToSquare{Square::None};
   CastleSide mCastleSide{CastleSide::None};
-  Piece      mPromotedTo{Piece::None};
+  Piece      mPromotedTo{PieceNone};
   bool       mEnPassant{false};
 };
 }  // namespace chessgen

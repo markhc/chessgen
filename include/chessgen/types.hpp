@@ -88,7 +88,7 @@ enum class ChessVariant {
   Standard,
   Chess960,
   Antichess,
-  ThreeCheck,
+  ThreeCheck
 };
 
 constexpr File operator++(File& f)
@@ -210,64 +210,64 @@ constexpr Square operator-(Square s, Direction d)
   }
 }
 
-enum class Piece : short {
-  Pawn,
-  Bishop,
-  Knight,
-  Rook,
-  Queen,
-  King,
-  Count,
-  None = Count,
+enum Piece : short {
+  PiecePawn,
+  PieceBishop,
+  PieceKnight,
+  PieceRook,
+  PieceQueen,
+  PieceKing,
+  PieceCount,
+  PieceNone = PieceCount,
 };
 
-enum class Color {
-  White,
-  Black,
-  Count,
-  None = Count
+enum Color {
+  ColorWhite,
+  ColorBlack,
+  ColorCount,
+  ColorNone = ColorCount
 };
 
 constexpr inline Color operator~(Color c)
 {
-  return c == Color::White ? Color::Black : Color::White;
+  return c == ColorWhite ? ColorBlack : ColorWhite;
 }
-template <Color color = Color::White>
+template <Color color = ColorWhite>
 inline std::string to_string(Piece p)
 {
-  if constexpr (color == Color::White) {
+  if constexpr (color == ColorWhite) {
     switch (p) {
-      case Piece::Pawn:
+      case PiecePawn:
         return "P";
-      case Piece::Rook:
+      case PieceRook:
         return "R";
-      case Piece::Bishop:
+      case PieceBishop:
         return "B";
-      case Piece::Knight:
+      case PieceKnight:
         return "N";
-      case Piece::King:
+      case PieceKing:
         return "K";
-      case Piece::Queen:
+      case PieceQueen:
         return "Q";
-      case Piece::Count:
+      case PieceCount:
       default:
         throw std::runtime_error("Invalid piece");
     }
   } else {
     switch (p) {
-      case Piece::Pawn:
+      case PiecePawn:
         return "p";
-      case Piece::Rook:
+      case PieceRook:
         return "r";
-      case Piece::Bishop:
+      case PieceBishop:
         return "b";
-      case Piece::Knight:
+      case PieceKnight:
         return "n";
-      case Piece::King:
+      case PieceKing:
         return "k";
-      case Piece::Queen:
+      case PieceQueen:
         return "q";
-      case Piece::Count:
+      case PieceCount:
       default:
         throw std::runtime_error("Invalid piece");
     }
@@ -288,6 +288,6 @@ inline std::string to_string(chessgen::Square s)
 }
 inline std::string to_string(chessgen::Color c)
 {
-  return c == chessgen::Color::White ? "White" : "Black";
+  return c == chessgen::ColorWhite ? "White" : "Black";
 }
 }  // namespace chessgen

@@ -148,7 +148,7 @@ void precomputeTables()
   initBishopMagicTable();
 
   for (Square s1 = Square::A1; s1 <= Square::H8; ++s1) {
-    for (auto&& pt : {Piece::Bishop, Piece::Rook}) {
+    for (auto&& pt : {PieceBishop, PieceRook}) {
       for (Square s2 = Square::A1; s2 <= Square::H8; ++s2) {
         if (getSlidingAttacks(pt, s1, Bitboard{}) & s2) {
           _libeBBs[int(s1)][int(s2)] =
@@ -192,16 +192,16 @@ Bitboard getNonSlidingAttacks(Piece piece, Square from, Color color)
 Bitboard getSlidingAttacks(Piece piece, Square from, Bitboard blockers)
 {
   switch (piece) {
-    case Piece::Bishop:
+    case PieceBishop:
       return getBishopAttacks(int(from), blockers);
-    case Piece::Rook:
+    case PieceRook:
       return getRookAttacks(int(from), blockers);
-    case Piece::Queen:
+    case PieceQueen:
       return getBishopAttacks(int(from), blockers) | getRookAttacks(int(from), blockers);      
-    case Piece::King:
-    case Piece::Pawn:
-    case Piece::Knight:
-    case Piece::Count:
+    case PieceKing:
+    case PiecePawn:
+    case PieceKnight:
+    case PieceCount:
     default:
       throw std::runtime_error("Not a sliding piece");
   }
@@ -215,8 +215,8 @@ void initPawnAttacks()
     auto const whiteAttackBb = ((start << 9) & ~Bitboards::FileA) | ((start << 7) & ~Bitboards::FileH);
     auto const blackAttackBb = ((start >> 9) & ~Bitboards::FileH) | ((start >> 7) & ~Bitboards::FileA);
 
-    _nonSlidingAttacks[int(Color::White)][int(Piece::Pawn)][i] = Bitboard{whiteAttackBb};
-    _nonSlidingAttacks[int(Color::Black)][int(Piece::Pawn)][i] = Bitboard{blackAttackBb};
+    _nonSlidingAttacks[ColorWhite][PiecePawn][i] = Bitboard{whiteAttackBb};
+    _nonSlidingAttacks[ColorBlack][PiecePawn][i] = Bitboard{blackAttackBb};
   }
 }
 // -------------------------------------------------------------------------------------------------
@@ -231,8 +231,8 @@ void initKnightAttacks()
         (((start << 6) | (start >> 10)) & ~(Bitboards::FileG | Bitboards::FileH)) |  // Left 2
         (((start >> 6) | (start << 10)) & ~(Bitboards::FileA | Bitboards::FileB));   // Right 2
 
-    _nonSlidingAttacks[int(Color::White)][int(Piece::Knight)][i] =
-        _nonSlidingAttacks[int(Color::Black)][int(Piece::Knight)][i] = Bitboard{attackBb};
+    _nonSlidingAttacks[ColorWhite][PieceKnight][i] =
+        _nonSlidingAttacks[ColorBlack][PieceKnight][i] = Bitboard{attackBb};
   }
 }
 // -------------------------------------------------------------------------------------------------
@@ -245,8 +245,8 @@ void initKingAttacks()
                           (((start << 9) | (start >> 7) | (start << 1)) & (~Bitboards::FileA)) |
                           ((start >> 8) | (start << 8));
 
-    _nonSlidingAttacks[int(Color::White)][int(Piece::King)][i] =
-        _nonSlidingAttacks[int(Color::Black)][int(Piece::King)][i] = Bitboard{attackBb};
+    _nonSlidingAttacks[ColorWhite][PieceKing][i] =
+        _nonSlidingAttacks[ColorBlack][PieceKing][i] = Bitboard{attackBb};
   }
 }
 // -------------------------------------------------------------------------------------------------

@@ -54,21 +54,22 @@ public:
   /**
    * @brief Constructs a board in the default initial position
    */
-  Board();
+  explicit Board(ChessVariant variant = ChessVariant::Standard);
 
   /**
    * @brief Constructs a board in the given position
    */
-  explicit Board(std::string_view initialFen);
+  explicit Board(std::string_view initialFen, ChessVariant variant = ChessVariant::Standard);
 
   /**
    * @brief Constructs a board from a saved state
    */
   explicit Board(BoardState const& state);
 
-  void                        loadFen(std::string_view fen);
-  std::string                 getFen() const;
-  std::string                 prettyPrint(bool useUnicodeChars = true) const;
+  void        loadFen(std::string_view fen, ChessVariant variant = ChessVariant::Standard);
+  std::string getFen() const;
+  std::string prettyPrint(bool useUnicodeChars = true) const;
+
   std::vector<UCIMove> const& getLegalMoves() const;
   std::vector<std::string>    getLegalMovesAsSAN() const;
   std::vector<UCIMove>        getLegalMovesForSquare(Square square) const;
@@ -85,8 +86,9 @@ public:
   bool makeMove(SANMove const& move);
   bool makeMove(UCIMove const& move);
 
+  ChessVariant                  getVariant() const;
   UCIMove                       sanToUci(std::string_view move) const;
-  std::string                   toSAN(UCIMove const& move) const;
+  std::string                   getSanForMove(UCIMove const& move) const;
   int                           getHalfMoves() const;
   int                           getFullMove() const;
   bool                          isInitialPosition() const;
@@ -128,6 +130,7 @@ private:
 
   std::vector<GameState>       mStates;
   GameOverReason               mReason{GameOverReason::OnGoing};
+  ChessVariant                 mVariant{ChessVariant::Standard};
   mutable std::vector<UCIMove> mLegalMoves;
   mutable std::atomic_bool     mBoardChanged{true};
   mutable std::mutex           mMovesMutex{};

@@ -30,21 +30,6 @@
 
 namespace chessgen
 {
-template <typename IndexType, typename ValueType, std::size_t Size>
-struct ArrayIndexedByType {
-  ValueType& operator[](IndexType c)
-  {
-    return arr[int(c)];
-  }
-  ValueType const& operator[](IndexType c) const
-  {
-    return arr[int(c)];
-  }
-
-private:
-  std::array<ValueType, Size> arr;
-};
-
 struct PieceInfo {
   Piece type;
   Color color;
@@ -52,42 +37,47 @@ struct PieceInfo {
 
 class BoardState
 {
+  friend class Board;
+
 public:
-  void clearEnPassant();
-  void updateNonPieceBitboards();
+  static BoardState fromFen(std::string_view view, ChessVariant variant);
 
-  static BoardState fromFen(std::string_view view);
+  std::string getFen() const;
+  std::string getSanForMove(UCIMove const& uci) const;
+  int         getHalfMoves() const;
+  int         getFullMove() const;
+  Color       getActivePlayer() const;
+  bool        isInCheck() const;
+  bool        canShortCastle(Color color) const;
+  bool        canLongCastle(Color color) const;
+  CastleSide  getCastlingRights(Color color) const;
+  Bitboard    getPieces(Piece type) const;
+  Bitboard    getPieces(Color color, Piece type) const;
+  Bitboard    getAllPieces(Color color) const;
+  Bitboard    getOccupied() const;
+  Bitboard    getUnoccupied() const;
+  Bitboard    getEnPassant() const;
+  Bitboard    getPossibleMoves(Piece type, Color color, Square fromSquare) const;
+  Bitboard    getKingBlockers(Color color) const;
+  PieceInfo   getPieceOn(Square sq) const;
+  Color       getColorOfPieceOn(Square sq) const;
+  bool        isSquareEmpty(Square sq) const;
+  Bitboard    getCheckSquares(Color color, Piece piece) const;
+  Bitboard    getCheckers() const;
+  Square      getKingSquare(Color color) const;
+  Square      getCastlingRookSquare(Color color, CastleSide side) const;
+  Square      getEnPassantSquare() const;
+  bool        isSquareUnderAttack(Color enemy, Square square) const;
+  bool        isMoveCheck(UCIMove const& move) const;
+  bool        isMoveMate(UCIMove const& move) const;
 
-  std::string toFen() const;
-
-  std::string             toSAN(UCIMove const& uci) const;
-  int                     getHalfMoves() const;
-  int                     getFullMove() const;
-  Color                   getActivePlayer() const;
-  bool                    isInCheck() const;
-  bool                    canShortCastle(Color color) const;
-  bool                    canLongCastle(Color color) const;
-  CastleSide              getCastlingRights(Color color) const;
-  Bitboard                getPieces(Piece type) const;
-  Bitboard                getPieces(Color color, Piece type) const;
-  Bitboard                getAllPieces(Color color) const;
-  Bitboard                getOccupied() const;
-  Bitboard                getUnoccupied() const;
-  Bitboard                getEnPassant() const;
-  Bitboard                getPossibleMoves(Piece type, Color color, Square fromSquare) const;
-  Bitboard                getKingBlockers(Color color) const;
-  PieceInfo               getPieceOn(Square sq) const;
-  Color                   getColorOfPieceOn(Square sq) const;
-  bool                    isSquareEmpty(Square sq) const;
-  Bitboard                getCheckSquares(Color color, Piece piece) const;
-  Bitboard                getCheckers() const;
-  Square                  getKingSquare(Color color) const;
-  Square                  getCastlingRookSquare(Color color, CastleSide side) const;
-  Square                  getEnPassantSquare() const;
-  bool                    isSquareUnderAttack(Color enemy, Square square) const;
-  bool                    isMoveCheck(UCIMove const& move) const;
-  bool                    isMoveMate(UCIMove const& move) const;
-
+private:
+  void     clearEnPassant();
+  void     updateNonPieceBitboards();
+  void     addPiece(Piece type, Color color, Square square);
+  void     removePiece(Piece type, Color color, Square square);
+  void     movePiece(Piece type, Color color, Square from, Square to);
+  bool     makeMove(UCIMove const& move);
   Bitboard getAttackers(Color color, Square square) const;
   Bitboard getWhitePawnAttacksForSquare(Square square) const;
   Bitboard getBlackPawnAttacksForSquare(Square square) const;
@@ -96,24 +86,14 @@ public:
   Bitboard getBishopAttacksForSquare(Square square, Color color) const;
   Bitboard getRookAttacksForSquare(Square square, Color color) const;
   Bitboard getQueenAttacksForSquare(Square square, Color color) const;
-
-  void addPiece(Piece type, Color color, Square square);
-  void removePiece(Piece type, Color color, Square square);
-  void movePiece(Piece type, Color color, Square from, Square to);
-  bool makeMove(UCIMove const& move);
-
-private:
-  using Pieces_t    = ArrayIndexedByType<Color, ArrayIndexedByType<Piece, Bitboard, 6>, 2>;
-  using AllPieces_t = ArrayIndexedByType<Color, Bitboard, 2>;
-  using CastlingRights_t = ArrayIndexedByType<Color, CastleSide, 2>;
-
-  Pieces_t         mPieces{};
-  AllPieces_t      mAllPieces{};
+  
+  Bitboard         mPieces[ColorCount][PieceCount]{};
+  Bitboard         mAllPieces[ColorCount]{};
   Bitboard         mOccupied{};
   Bitboard         mEnPassant{};
-  Color            mTurn{Color::White};
+  Color            mTurn{ColorWhite};
   int              mHalfMoves{0};
   int              mFullMove{1};
-  CastlingRights_t mCastleRights;
+  CastleSide       mCastleRights[ColorCount]{};
 };
 }  // namespace chessgen

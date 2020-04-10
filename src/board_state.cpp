@@ -22,14 +22,13 @@
 #include "chessgen/board_state.hpp"
 
 #include <charconv>
+#include <cassert>
 
 #include "chessgen/attacks.hpp"
 #include "chessgen/board.hpp"
 #include "chessgen/helpers.hpp"
 
 namespace chessgen
-{
-inline namespace fen
 {
 // -------------------------------------------------------------------------------------------------
 static int notationToIndex(std::string_view notation)
@@ -44,145 +43,6 @@ static std::string indexToNotation(int index)
   return to_string(Square(index));
 }
 // -------------------------------------------------------------------------------------------------
-ArrayIndexedByType<Color, ArrayIndexedByType<Piece, Bitboard, 6>, 2> parsePiecePlacement(std::string_view str)
-{
-  auto pieces   = ArrayIndexedByType<Color, ArrayIndexedByType<Piece, Bitboard, 6>, 2>{};
-  auto boardPos = 56ULL;
-
-  auto getPieceInfo = [](char c) -> std::pair<Color, Piece> {
-    switch (c) {
-      case 'p':
-        return std::make_pair(Color::Black, Piece::Pawn);
-      case 'r':
-        return std::make_pair(Color::Black, Piece::Rook);
-      case 'n':
-        return std::make_pair(Color::Black, Piece::Knight);
-      case 'b':
-        return std::make_pair(Color::Black, Piece::Bishop);
-      case 'q':
-        return std::make_pair(Color::Black, Piece::Queen);
-      case 'k':
-        return std::make_pair(Color::Black, Piece::King);
-      case 'P':
-        return std::make_pair(Color::White, Piece::Pawn);
-      case 'R':
-        return std::make_pair(Color::White, Piece::Rook);
-      case 'N':
-        return std::make_pair(Color::White, Piece::Knight);
-      case 'B':
-        return std::make_pair(Color::White, Piece::Bishop);
-      case 'Q':
-        return std::make_pair(Color::White, Piece::Queen);
-      case 'K':
-        return std::make_pair(Color::White, Piece::King);
-      default:
-        assert(!"Logic error");
-    }
-  };
-
-  for (auto&& currChar : str)
-  {
-    if ((currChar != '/' && boardPos >= 64) || boardPos > 64) {
-      throw std::runtime_error{"Malformed FEN string"};
-    }
-
-    switch (currChar) {
-      case 'p': case 'r': case 'n': case 'b': case 'q': case 'k':
-      case 'P': case 'R': case 'N': case 'B': case 'Q': case 'K': 
-      {
-        auto [color, piece] = getPieceInfo(currChar);
-
-        pieces[color][piece].setBit(boardPos++);
-        break;
-      }
-      case '/':
-        boardPos -= 16;  // Go down one rank
-        break;
-      // clang-format off
-      case '1': case '2': case '3': 
-      case '4': case '5': case '6':  
-      case '7': case '8': case '9': 
-        boardPos += static_cast<std::uint64_t>(currChar) - '0';
-        break;
-      // clang-format on
-      default:
-        throw std::runtime_error{"Malformed FEN string"};
-    }
-  }
-
-  if (boardPos != 8) {
-    throw std::runtime_error{"Malformed FEN string"};
-  }
-
-  return pieces;
-}
-// -------------------------------------------------------------------------------------------------
-Color parsePlayerTurn(std::string_view str)
-{
-  if (str == "w")
-    return Color::White;
-  else if (str == "b")
-    return Color::Black;
-  else
-    throw std::runtime_error{"Invalid play turn"};
-}
-// -------------------------------------------------------------------------------------------------
-ArrayIndexedByType<Color, CastleSide, 2> parseCastlingAvailability(std::string_view str)
-{
-  auto castleRights = ArrayIndexedByType<Color, CastleSide, 2>{};
-
-  castleRights[Color::White] = CastleSide::None;
-  castleRights[Color::Black] = CastleSide::None;
-
-  if (str != "-") {
-    for (auto&& c : str) {
-      if (c == 'K') {
-        castleRights[Color::White] = castleRights[Color::White] | CastleSide::King;
-      } else if (c == 'Q') {
-        castleRights[Color::White] = castleRights[Color::White] | CastleSide::Queen;
-      } else if (c == 'k') {
-        castleRights[Color::Black] = castleRights[Color::Black] | CastleSide::King;
-      } else if (c == 'q') {
-        castleRights[Color::Black] = castleRights[Color::Black] | CastleSide::Queen;
-      } else {
-        throw std::runtime_error{"Invalid castling rights"};
-      }
-    }
-  }
-
-  return castleRights;
-};
-// -------------------------------------------------------------------------------------------------
-auto parseEnPassantSquare(std::string_view str)
-{
-  Bitboard enpassant;
-  if (str != "-") {
-    enpassant.setBit(notationToIndex(str));
-  }
-  return enpassant;
-}
-// -------------------------------------------------------------------------------------------------
-auto parseHalfMoveNumber(std::string_view str)
-{
-  auto halfmoves = 0;
-  auto [p, ec]   = std::from_chars(str.data(), str.data() + str.size(), halfmoves);
-  if (ec != std::errc()) {
-    throw std::runtime_error{"Invalid half move value"};
-  }
-  return halfmoves;
-}
-// -------------------------------------------------------------------------------------------------
-auto parseFullMoveNumber(std::string_view str)
-{
-  auto fullmoves = 0;
-  auto [p, ec]   = std::from_chars(str.data(), str.data() + str.size(), fullmoves);
-  if (ec != std::errc()) {
-    throw std::runtime_error{"Invalid full move value"};
-  }
-  return fullmoves;
-}
-}  // namespace fen
-// -------------------------------------------------------------------------------------------------
 void BoardState::clearEnPassant()
 {
   mEnPassant.clear();
@@ -190,20 +50,20 @@ void BoardState::clearEnPassant()
 // -------------------------------------------------------------------------------------------------
 void BoardState::updateNonPieceBitboards()
 {
-  mAllPieces[Color::White] =
-      mPieces[Color::White][Piece::Pawn] | mPieces[Color::White][Piece::Rook] |
-      mPieces[Color::White][Piece::Knight] | mPieces[Color::White][Piece::Bishop] |
-      mPieces[Color::White][Piece::Queen] | mPieces[Color::White][Piece::King];
+  mAllPieces[ColorWhite] =
+      mPieces[ColorWhite][PiecePawn] | mPieces[ColorWhite][PieceRook] |
+      mPieces[ColorWhite][PieceKnight] | mPieces[ColorWhite][PieceBishop] |
+      mPieces[ColorWhite][PieceQueen] | mPieces[ColorWhite][PieceKing];
 
-  mAllPieces[Color::Black] =
-      mPieces[Color::Black][Piece::Pawn] | mPieces[Color::Black][Piece::Rook] |
-      mPieces[Color::Black][Piece::Knight] | mPieces[Color::Black][Piece::Bishop] |
-      mPieces[Color::Black][Piece::Queen] | mPieces[Color::Black][Piece::King];
+  mAllPieces[ColorBlack] =
+      mPieces[ColorBlack][PiecePawn] | mPieces[ColorBlack][PieceRook] |
+      mPieces[ColorBlack][PieceKnight] | mPieces[ColorBlack][PieceBishop] |
+      mPieces[ColorBlack][PieceQueen] | mPieces[ColorBlack][PieceKing];
 
-  mOccupied = mAllPieces[Color::White] | mAllPieces[Color::Black];
+  mOccupied = mAllPieces[ColorWhite] | mAllPieces[ColorBlack];
 }
 // -------------------------------------------------------------------------------------------------
-std::string BoardState::toFen() const
+std::string BoardState::getFen() const
 {
   std::string fen;
 
@@ -219,10 +79,10 @@ std::string BoardState::toFen() const
           fen += std::to_string(emptyCount);
           emptyCount = 0;
         }
-        if (color == Color::White)
-          fen += to_string<Color::White>(piece);
+        if (color == ColorWhite)
+          fen += to_string<ColorWhite>(piece);
         else
-          fen += to_string<Color::Black>(piece);
+          fen += to_string<ColorBlack>(piece);
       } else {
         emptyCount++;
       }
@@ -234,15 +94,15 @@ std::string BoardState::toFen() const
     if (i != 0) fen += '/';
   }
 
-  fen += mTurn == Color::White ? " w " : " b ";
-  if (mCastleRights[Color::White] == CastleSide::None &&
-      mCastleRights[Color::Black] == CastleSide::None) {
+  fen += mTurn == ColorWhite ? " w " : " b ";
+  if (mCastleRights[ColorWhite] == CastleSide::None &&
+      mCastleRights[ColorBlack] == CastleSide::None) {
     fen += '-';
   } else {
-    if (enumHasFlag(mCastleRights[Color::White], CastleSide::King)) fen += 'K';
-    if (enumHasFlag(mCastleRights[Color::White], CastleSide::Queen)) fen += 'Q';
-    if (enumHasFlag(mCastleRights[Color::Black], CastleSide::King)) fen += 'k';
-    if (enumHasFlag(mCastleRights[Color::Black], CastleSide::Queen)) fen += 'q';
+    if (enumHasFlag(mCastleRights[ColorWhite], CastleSide::King)) fen += 'K';
+    if (enumHasFlag(mCastleRights[ColorWhite], CastleSide::Queen)) fen += 'Q';
+    if (enumHasFlag(mCastleRights[ColorBlack], CastleSide::King)) fen += 'k';
+    if (enumHasFlag(mCastleRights[ColorBlack], CastleSide::Queen)) fen += 'q';
   }
 
   fen += ' ';
@@ -253,28 +113,158 @@ std::string BoardState::toFen() const
   return fen;
 }
 // -------------------------------------------------------------------------------------------------
-BoardState BoardState::fromFen(std::string_view view)
+BoardState BoardState::fromFen(std::string_view view, ChessVariant variant)
 {
   auto const fields = stringSplit(view, ' ');
 
+  auto parsePiecePlacement = [&](BoardState& state, std::string_view str) {
+    auto boardPos = 56ULL;
+
+    auto getPieceInfo = [](char c) -> std::pair<Color, Piece> {
+      switch (c) {
+        case 'p':
+          return std::make_pair(ColorBlack, PiecePawn);
+        case 'r':
+          return std::make_pair(ColorBlack, PieceRook);
+        case 'n':
+          return std::make_pair(ColorBlack, PieceKnight);
+        case 'b':
+          return std::make_pair(ColorBlack, PieceBishop);
+        case 'q':
+          return std::make_pair(ColorBlack, PieceQueen);
+        case 'k':
+          return std::make_pair(ColorBlack, PieceKing);
+        case 'P':
+          return std::make_pair(ColorWhite, PiecePawn);
+        case 'R':
+          return std::make_pair(ColorWhite, PieceRook);
+        case 'N':
+          return std::make_pair(ColorWhite, PieceKnight);
+        case 'B':
+          return std::make_pair(ColorWhite, PieceBishop);
+        case 'Q':
+          return std::make_pair(ColorWhite, PieceQueen);
+        case 'K':
+          return std::make_pair(ColorWhite, PieceKing);
+        default:
+          assert(!"Logic error");
+          return {};
+      }
+    };
+
+    for (auto&& currChar : str) {
+      if ((currChar != '/' && boardPos >= 64) || boardPos > 64) {
+        throw std::runtime_error{"Malformed FEN string"};
+      }
+
+      switch (currChar) {
+        case 'p':
+        case 'r':
+        case 'n':
+        case 'b':
+        case 'q':
+        case 'k':
+        case 'P':
+        case 'R':
+        case 'N':
+        case 'B':
+        case 'Q':
+        case 'K': {
+          auto [color, piece] = getPieceInfo(currChar);
+
+          state.mPieces[color][piece].setBit(boardPos++);
+          break;
+        }
+        case '/':
+          boardPos -= 16;  // Go down one rank
+          break;
+          // clang-format off
+      case '1': case '2': case '3': 
+      case '4': case '5': case '6':  
+      case '7': case '8': case '9': 
+        boardPos += static_cast<std::uint64_t>(currChar) - '0';
+        break;
+        // clang-format on
+        default:
+          throw std::runtime_error{"Malformed FEN string"};
+      }
+    }
+
+    if (boardPos != 8) {
+      throw std::runtime_error{"Malformed FEN string"};
+    }
+  };
+
+  auto parsePlayerTurn = [&](BoardState& state, std::string_view str) {
+    if (str == "w")
+      state.mTurn = ColorWhite;
+    else if (str == "b")
+      state.mTurn = ColorBlack;
+    else
+      throw std::runtime_error{"Invalid play turn"};
+  };
+
+  auto parseCastlingAvailability = [&](BoardState& state, std::string_view str) {
+    if (str != "-") {
+      for (auto&& c : str) {
+        if (c == 'K') {
+          state.mCastleRights[ColorWhite] = state.mCastleRights[ColorWhite] | CastleSide::King;
+        } else if (c == 'Q') {
+          state.mCastleRights[ColorWhite] = state.mCastleRights[ColorWhite] | CastleSide::Queen;
+        } else if (c == 'k') {
+          state.mCastleRights[ColorBlack] = state.mCastleRights[ColorBlack] | CastleSide::King;
+        } else if (c == 'q') {
+          state.mCastleRights[ColorBlack] = state.mCastleRights[ColorBlack] | CastleSide::Queen;
+        } else {
+          throw std::runtime_error{"Invalid castling rights"};
+        }
+      }
+    }
+  };
+
+  auto parseEnPassantSquare = [&](BoardState& state, std::string_view str) {
+    if (str != "-") {
+      if (str[0] < 'a' || str[0] > 'h' || str[1] < '1' || str[1] > '8')
+        throw std::runtime_error{"Invalid EP square"};
+
+      state.mEnPassant.setBit(notationToIndex(str));
+    }
+  };
+
+  auto parseHalfMoveNumber = [&](BoardState& state, std::string_view str) {
+    auto [p, ec] = std::from_chars(str.data(), str.data() + str.size(), state.mHalfMoves);
+    if (ec != std::errc()) {
+      throw std::runtime_error{"Invalid half move value"};
+    }
+  };
+
+  auto parseFullMoveNumber = [&](BoardState& state, std::string_view str) {
+    auto [p, ec] = std::from_chars(str.data(), str.data() + str.size(), state.mFullMove);
+    if (ec != std::errc()) {
+      throw std::runtime_error{"Invalid full move value"};
+    }
+  };
+
   BoardState state;
 
-  if (fields.size() == 6) {
-    state.mPieces        = fen::parsePiecePlacement(fields[0]);
-    state.mTurn          = fen::parsePlayerTurn(fields[1]);
-    state.mCastleRights  = fen::parseCastlingAvailability(fields[2]);
-    state.mEnPassant     = fen::parseEnPassantSquare(fields[3]);
-    state.mHalfMoves     = fen::parseHalfMoveNumber(fields[4]);
-    state.mFullMove      = fen::parseFullMoveNumber(fields[5]);
-  } else if (fields.size() == 4) {
-    state.mPieces        = fen::parsePiecePlacement(fields[0]);
-    state.mTurn          = fen::parsePlayerTurn(fields[1]);
-    state.mCastleRights  = fen::parseCastlingAvailability(fields[2]);
-    state.mEnPassant     = fen::parseEnPassantSquare(fields[3]);
-    state.mHalfMoves     = 0;
-    state.mFullMove      = 1;
-  } else {
-    throw std::runtime_error{"Malformed FEN string"};
+  if (variant == ChessVariant::Standard) {
+    if (fields.size() == 6) {
+      parsePiecePlacement(state, fields[0]);
+      parsePlayerTurn(state, fields[1]);
+      parseCastlingAvailability(state, fields[2]);
+      parseEnPassantSquare(state, fields[3]);
+      parseHalfMoveNumber(state, fields[4]);
+      parseFullMoveNumber(state, fields[5]);
+    } else if (fields.size() == 4) {
+      parsePiecePlacement(state, fields[0]);
+      parsePlayerTurn(state, fields[1]);
+      parseCastlingAvailability(state, fields[2]);
+      parseEnPassantSquare(state, fields[3]);
+      state.mHalfMoves = 0;
+      state.mFullMove  = 1;
+    } else {
+      throw std::runtime_error{"Malformed FEN string"};
+    }
   }
 
   state.updateNonPieceBitboards();
@@ -282,7 +272,7 @@ BoardState BoardState::fromFen(std::string_view view)
   return state;
 }
 // -------------------------------------------------------------------------------------------------
-std::string BoardState::toSAN(UCIMove const& move) const
+std::string BoardState::getSanForMove(UCIMove const& move) const
 {
   using namespace std::literals;
   using std::to_string;
@@ -310,9 +300,9 @@ std::string BoardState::toSAN(UCIMove const& move) const
   auto const piece     = getPieceOn(from).type;
   auto const isCapture = isSquareEmpty(to);
 
-  if (piece == Piece::None) return "";
+  if (piece == PieceNone) return "";
 
-  if (piece == Piece::Pawn) {
+  if (piece == PiecePawn) {
     if (!isCapture) {
       return appendSuffixes(to_string(to));
     } else {
@@ -326,20 +316,20 @@ std::string BoardState::toSAN(UCIMove const& move) const
 
   auto san = [piece]() {
     switch (piece) {
-      case Piece::Bishop:
+      case PieceBishop:
         return "B"s;
-      case Piece::Knight:
+      case PieceKnight:
         return "N"s;
-      case Piece::Rook:
+      case PieceRook:
         return "R"s;
-      case Piece::Queen:
+      case PieceQueen:
         return "Q"s;
-      case Piece::King:
+      case PieceKing:
         return "K"s;
 
       // These should not happen
-      case Piece::Pawn:
-      case Piece::None:
+      case PiecePawn:
+      case PieceNone:
       default:
         return "-"s;
     }
@@ -413,13 +403,13 @@ bool BoardState::canShortCastle(Color color) const
     return false;
   }
 
-  auto       kingIndex  = getPieces(color, Piece::King).lsb();
+  auto       kingIndex  = getPieces(color, PieceKing).lsb();
   auto const enemyColor = ~color;
 
   auto const squareMask = Bitboard((1ULL << (kingIndex + 1)) | (1ULL << (kingIndex + 2)));
   if (getOccupied() & squareMask) return false;
 
-  auto rookIndex = getPieces(color, Piece::Rook).msb();
+  auto rookIndex = getPieces(color, PieceRook).msb();
 
   // If there is no rook or if the only rook is the wrong one
   if (rookIndex == -1 || rookIndex < kingIndex) return false;
@@ -434,11 +424,11 @@ bool BoardState::canLongCastle(Color color) const
 {
   // Cannot castle if:
   // - The player has no castle rights (king or rook already moved)
-  if (!enumHasFlag(mCastleRights[color], CastleSide::King)) {
+  if (!enumHasFlag(mCastleRights[color], CastleSide::Queen)) {
     return false;
   }
 
-  auto       kingIndex  = getPieces(color, Piece::King).msb();
+  auto       kingIndex  = getPieces(color, PieceKing).msb();
   auto const enemyColor = ~color;
 
   auto const squareMask = Bitboard((1ULL << (kingIndex - 1)) |  //
@@ -446,7 +436,7 @@ bool BoardState::canLongCastle(Color color) const
                                    (1ULL << (kingIndex - 3)));
   if (getOccupied() & squareMask) return false;
 
-  auto rookIndex = getPieces(color, Piece::Rook).lsb();
+  auto rookIndex = getPieces(color, PieceRook).lsb();
 
   // If there is no rook or if the only rook is the wrong one
   if (rookIndex == -1 || rookIndex > kingIndex) return false;
@@ -464,7 +454,7 @@ CastleSide BoardState::getCastlingRights(Color color) const
 // -------------------------------------------------------------------------------------------------
 Bitboard BoardState::getPieces(Piece type) const
 {
-  return mPieces[Color::White][type] | mPieces[Color::Black][type];
+  return mPieces[ColorWhite][type] | mPieces[ColorBlack][type];
 }
 // -------------------------------------------------------------------------------------------------
 Bitboard BoardState::getPieces(Color color, Piece type) const
@@ -495,22 +485,22 @@ Bitboard BoardState::getEnPassant() const
 Bitboard BoardState::getPossibleMoves(Piece type, Color color, Square fromSquare) const
 {
   switch (type) {
-    case Piece::Pawn:
-      if (color == Color::White)
+    case PiecePawn:
+      if (color == ColorWhite)
         return getWhitePawnAttacksForSquare(fromSquare);
       else
         return getBlackPawnAttacksForSquare(fromSquare);
-    case Piece::Knight:
+    case PieceKnight:
       return getKnightAttacksForSquare(fromSquare, color);
-    case Piece::King:
+    case PieceKing:
       return getKingAttacksForSquare(fromSquare, color);
-    case Piece::Rook:
+    case PieceRook:
       return getRookAttacksForSquare(fromSquare, color);
-    case Piece::Bishop:
+    case PieceBishop:
       return getBishopAttacksForSquare(fromSquare, color);
-    case Piece::Queen:
+    case PieceQueen:
       return getQueenAttacksForSquare(fromSquare, color);
-    case Piece::Count:
+    case PieceCount:
     default:
       throw std::runtime_error{"Invalid piece type"};
   }
@@ -525,10 +515,10 @@ Bitboard BoardState::getKingBlockers(Color them) const
 
   CHESSGEN_ASSERT(ksq != Square::None);
 
-  auto const rooksOrQueens   = getPieces(us, Piece::Queen) | getPieces(us, Piece::Rook);
-  auto const bishopsOrQueens = getPieces(us, Piece::Queen) | getPieces(us, Piece::Bishop);
-  auto const rqAttacks = attacks::getSlidingAttacks(Piece::Rook, ksq, Bitboard{}) & rooksOrQueens;
-  auto const bqAttacks = attacks::getSlidingAttacks(Piece::Bishop, ksq, Bitboard{}) & bishopsOrQueens;
+  auto const rooksOrQueens   = getPieces(us, PieceQueen) | getPieces(us, PieceRook);
+  auto const bishopsOrQueens = getPieces(us, PieceQueen) | getPieces(us, PieceBishop);
+  auto const rqAttacks = attacks::getSlidingAttacks(PieceRook, ksq, Bitboard{}) & rooksOrQueens;
+  auto const bqAttacks = attacks::getSlidingAttacks(PieceBishop, ksq, Bitboard{}) & bishopsOrQueens;
 
   // Find all sliders aiming towards the king position
   auto sliders = getAllPieces(us) & (rqAttacks | bqAttacks);
@@ -551,17 +541,17 @@ bool BoardState::isSquareUnderAttack(Color enemy, Square square) const
 {
   auto const us = ~enemy;
 
-  auto const pawns = getPossibleMoves(Piece::Pawn, us, square) & getPieces(enemy, Piece::Pawn);
+  auto const pawns = getPossibleMoves(PiecePawn, us, square) & getPieces(enemy, PiecePawn);
   if (pawns) return true;
-  auto const knights = getPossibleMoves(Piece::Knight, us, square) & getPieces(enemy, Piece::Knight);
+  auto const knights = getPossibleMoves(PieceKnight, us, square) & getPieces(enemy, PieceKnight);
   if (knights) return true;
-  auto const bishops = getPossibleMoves(Piece::Bishop, us, square) & getPieces(enemy, Piece::Bishop);
+  auto const bishops = getPossibleMoves(PieceBishop, us, square) & getPieces(enemy, PieceBishop);
   if (bishops) return true;
-  auto const rooks = getPossibleMoves(Piece::Rook, us, square) & getPieces(enemy, Piece::Rook);
+  auto const rooks = getPossibleMoves(PieceRook, us, square) & getPieces(enemy, PieceRook);
   if (rooks) return true;
-  auto const queens = getPossibleMoves(Piece::Queen, us, square) & getPieces(enemy, Piece::Queen);
+  auto const queens = getPossibleMoves(PieceQueen, us, square) & getPieces(enemy, PieceQueen);
   if (queens) return true;
-  auto const king = getPossibleMoves(Piece::King, us, square) & getPieces(enemy, Piece::King);
+  auto const king = getPossibleMoves(PieceKing, us, square) & getPieces(enemy, PieceKing);
 
   return !king.isZero();
 }
@@ -569,28 +559,28 @@ bool BoardState::isSquareUnderAttack(Color enemy, Square square) const
 PieceInfo BoardState::getPieceOn(Square sq) const
 {
   auto const pieces = {
-      Piece::King,
-      Piece::Queen,
-      Piece::Rook,
-      Piece::Bishop,
-      Piece::Knight,
-      Piece::Pawn,
+      PieceKing,
+      PieceQueen,
+      PieceRook,
+      PieceBishop,
+      PieceKnight,
+      PiecePawn,
   };
 
-  for (auto color : {Color::White, Color::Black}) {
+  for (auto color : {ColorWhite, ColorBlack}) {
     for (auto pt : pieces) {
       if (mPieces[color][pt] & sq) return PieceInfo{pt, color};
     }
   }
-  return PieceInfo{Piece::None, Color::None};
+  return PieceInfo{PieceNone, ColorNone};
 }
 // -------------------------------------------------------------------------------------------------
 Color BoardState::getColorOfPieceOn(Square sq) const
 {
-  if (getAllPieces(Color::White) & sq)
-    return Color::White;
+  if (getAllPieces(ColorWhite) & sq)
+    return ColorWhite;
   else
-    return Color::Black;
+    return ColorBlack;
 }
 // -------------------------------------------------------------------------------------------------
 bool BoardState::isSquareEmpty(Square sq) const
@@ -600,7 +590,7 @@ bool BoardState::isSquareEmpty(Square sq) const
 // -------------------------------------------------------------------------------------------------
 Bitboard BoardState::getCheckSquares(Color color, Piece piece) const
 {
-  if (piece == Piece::King) return Bitboard{};
+  if (piece == PieceKing) return Bitboard{};
 
   return getPossibleMoves(piece, color, getKingSquare(~color));
 }
@@ -612,27 +602,27 @@ Bitboard BoardState::getCheckers() const
   auto const us  = getActivePlayer();
   auto const ksq = getKingSquare(us);
 
-  auto const pawns   = getPossibleMoves(Piece::Pawn, us, ksq) & getPieces(~us, Piece::Pawn);
-  auto const knights = getPossibleMoves(Piece::Knight, us, ksq) & getPieces(~us, Piece::Knight);
-  auto const bishops = getPossibleMoves(Piece::Bishop, us, ksq) & getPieces(~us, Piece::Bishop);
-  auto const rooks   = getPossibleMoves(Piece::Rook, us, ksq) & getPieces(~us, Piece::Rook);
-  auto const queens  = getPossibleMoves(Piece::Queen, us, ksq) & getPieces(~us, Piece::Queen);
+  auto const pawns   = getPossibleMoves(PiecePawn, us, ksq) & getPieces(~us, PiecePawn);
+  auto const knights = getPossibleMoves(PieceKnight, us, ksq) & getPieces(~us, PieceKnight);
+  auto const bishops = getPossibleMoves(PieceBishop, us, ksq) & getPieces(~us, PieceBishop);
+  auto const rooks   = getPossibleMoves(PieceRook, us, ksq) & getPieces(~us, PieceRook);
+  auto const queens  = getPossibleMoves(PieceQueen, us, ksq) & getPieces(~us, PieceQueen);
 
   return pawns | knights | bishops | rooks | queens;
 }
 // -------------------------------------------------------------------------------------------------
 Square BoardState::getKingSquare(Color color) const
 {
-  return makeSquare(getPieces(color, Piece::King).lsb());
+  return makeSquare(getPieces(color, PieceKing).lsb());
 }
 // -------------------------------------------------------------------------------------------------
 Square BoardState::getCastlingRookSquare(Color color, CastleSide side) const
 {
   // TODO: Support Chess960
   if (side == CastleSide::King)
-    return color == Color::White ? Square::H1 : Square::H8;
+    return color == ColorWhite ? Square::H1 : Square::H8;
   else
-    return color == Color::White ? Square::A1 : Square::A8;
+    return color == ColorWhite ? Square::A1 : Square::A8;
 }
 // -------------------------------------------------------------------------------------------------
 Square BoardState::getEnPassantSquare() const
@@ -665,49 +655,49 @@ Bitboard BoardState::getAttackers(Color color, Square square) const
   auto const us   = color;
   auto const them = ~color;
 
-  auto const pawns   = getPossibleMoves(Piece::Pawn, them, square) & getPieces(us, Piece::Pawn);
-  auto const knights = getPossibleMoves(Piece::Knight, them, square) & getPieces(us, Piece::Knight);
-  auto const bishops = getPossibleMoves(Piece::Bishop, them, square) & getPieces(us, Piece::Bishop);
-  auto const rooks   = getPossibleMoves(Piece::Rook, them, square) & getPieces(us, Piece::Rook);
-  auto const queens  = getPossibleMoves(Piece::Queen, them, square) & getPieces(us, Piece::Queen);
-  auto const king    = getPossibleMoves(Piece::King, them, square) & getPieces(us, Piece::King);
+  auto const pawns   = getPossibleMoves(PiecePawn, them, square) & getPieces(us, PiecePawn);
+  auto const knights = getPossibleMoves(PieceKnight, them, square) & getPieces(us, PieceKnight);
+  auto const bishops = getPossibleMoves(PieceBishop, them, square) & getPieces(us, PieceBishop);
+  auto const rooks   = getPossibleMoves(PieceRook, them, square) & getPieces(us, PieceRook);
+  auto const queens  = getPossibleMoves(PieceQueen, them, square) & getPieces(us, PieceQueen);
+  auto const king    = getPossibleMoves(PieceKing, them, square) & getPieces(us, PieceKing);
 
   return pawns | knights | bishops | rooks | queens | king;
 }
 // -------------------------------------------------------------------------------------------------
 Bitboard BoardState::getWhitePawnAttacksForSquare(Square square) const
 {
-  return attacks::getNonSlidingAttacks(Piece::Pawn, square, Color::White);
+  return attacks::getNonSlidingAttacks(PiecePawn, square, ColorWhite);
 }
 // -------------------------------------------------------------------------------------------------
 Bitboard BoardState::getBlackPawnAttacksForSquare(Square square) const
 {
-  return attacks::getNonSlidingAttacks(Piece::Pawn, square, Color::Black);
+  return attacks::getNonSlidingAttacks(PiecePawn, square, ColorBlack);
 }
 // -------------------------------------------------------------------------------------------------
 Bitboard BoardState::getKingAttacksForSquare(Square square, Color color) const
 {
-  return attacks::getNonSlidingAttacks(Piece::King, square, color) & ~getAllPieces(color);
+  return attacks::getNonSlidingAttacks(PieceKing, square, color) & ~getAllPieces(color);
 }
 // -------------------------------------------------------------------------------------------------
 Bitboard BoardState::getKnightAttacksForSquare(Square square, Color color) const
 {
-  return attacks::getNonSlidingAttacks(Piece::Knight, square, color) & ~getAllPieces(color);
+  return attacks::getNonSlidingAttacks(PieceKnight, square, color) & ~getAllPieces(color);
 }
 // -------------------------------------------------------------------------------------------------
 Bitboard BoardState::getBishopAttacksForSquare(Square square, Color color) const
 {
-  return attacks::getSlidingAttacks(Piece::Bishop, square, getOccupied()) & ~getAllPieces(color);
+  return attacks::getSlidingAttacks(PieceBishop, square, getOccupied()) & ~getAllPieces(color);
 }
 // -------------------------------------------------------------------------------------------------
 Bitboard BoardState::getRookAttacksForSquare(Square square, Color color) const
 {
-  return attacks::getSlidingAttacks(Piece::Rook, square, getOccupied()) & ~getAllPieces(color);
+  return attacks::getSlidingAttacks(PieceRook, square, getOccupied()) & ~getAllPieces(color);
 }
 // -------------------------------------------------------------------------------------------------
 Bitboard BoardState::getQueenAttacksForSquare(Square square, Color color) const
 {
-  return attacks::getSlidingAttacks(Piece::Queen, square, getOccupied()) & ~getAllPieces(color);
+  return attacks::getSlidingAttacks(PieceQueen, square, getOccupied()) & ~getAllPieces(color);
 }
 // -------------------------------------------------------------------------------------------------
 void BoardState::addPiece(Piece type, Color color, Square square)
@@ -726,10 +716,10 @@ void BoardState::removePiece(Piece type, Color color, Square square)
 // -------------------------------------------------------------------------------------------------
 void BoardState::movePiece(Piece type, Color color, Square from, Square to)
 {
-  if (type == Piece::King) {
+  if (type == PieceKing) {
     mCastleRights[color] = CastleSide::None;
-  } else if (type == Piece::Rook) {
-    if (color == Color::White) {
+  } else if (type == PieceRook) {
+    if (color == ColorWhite) {
       if (from == Square::A1)
         mCastleRights[color] = mCastleRights[color] & ~CastleSide::Queen;
       else if (from == Square::H1)
@@ -740,16 +730,16 @@ void BoardState::movePiece(Piece type, Color color, Square from, Square to)
       else if (from == Square::H8)
         mCastleRights[color] = mCastleRights[color] & ~CastleSide::King;
     }
-  } else if (type == Piece::Pawn) {
+  } else if (type == PiecePawn) {
     auto const indexFrom = int(from);
     auto const indexTo   = int(to);
 
     // If it's a double move, see if there is a pawn ready to take en passant
     // if so, record this square
     if (std::abs(indexFrom - indexTo) == 16) {
-      auto const pawns = getPieces(~color, Piece::Pawn);
+      auto const pawns = getPieces(~color, PiecePawn);
       auto const toSq  = makeSquare(indexTo);
-      auto const epSq  = (indexTo + (color == Color::White ? -8 : 8));
+      auto const epSq  = (indexTo + (color == ColorWhite ? -8 : 8));
       if (getFile(toSq) == File::FileA) {
         if (pawns & (toSq + Direction::East)) {
           mEnPassant.setBit(epSq);
@@ -777,7 +767,7 @@ void BoardState::movePiece(Piece type, Color color, Square from, Square to)
 bool BoardState::makeMove(UCIMove const& move)
 {
   auto const us     = getActivePlayer();
-  auto const behind = us == Color::White ? Direction::South : Direction::North;
+  auto const behind = us == ColorWhite ? Direction::South : Direction::North;
   auto const them   = ~us;
   auto const from   = move.fromSquare();
   auto const to     = move.toSquare();
@@ -797,29 +787,29 @@ bool BoardState::makeMove(UCIMove const& move)
     auto const rookFrom = getCastlingRookSquare(us, move.getCastleSide());
 
     auto const rookTo = [&] {
-      if (us == Color::White)
+      if (us == ColorWhite)
         return kingside ? Square::F1 : Square::D1;
       else
         return kingside ? Square::F8 : Square::D8;
     }();
 
     auto const kingTo = [&] {
-      if (us == Color::White)
+      if (us == ColorWhite)
         return kingside ? Square::G1 : Square::C1;
       else
         return kingside ? Square::G8 : Square::C8;
     }();
 
-    removePiece(Piece::Rook, us, rookFrom);
-    removePiece(Piece::King, us, kingFrom);
-    addPiece(Piece::Rook, us, rookTo);
-    addPiece(Piece::King, us, kingTo);
+    removePiece(PieceRook, us, rookFrom);
+    removePiece(PieceKing, us, kingFrom);
+    addPiece(PieceRook, us, rookTo);
+    addPiece(PieceKing, us, kingTo);
 
     mCastleRights[us] = CastleSide::None;
   } else {
-    auto captured = move.isEnPassant() ? Piece::Pawn : getPieceOn(to).type;
+    auto captured = move.isEnPassant() ? PiecePawn : getPieceOn(to).type;
 
-    if (captured != Piece::None) {
+    if (captured != PieceNone) {
       mHalfMoves = 0;  // Reset fifty-move counter on captures
       if (move.isEnPassant())
         removePiece(captured, them, to + behind);
@@ -831,11 +821,11 @@ bool BoardState::makeMove(UCIMove const& move)
   }
 
   if (move.isPromotion()) {
-    removePiece(Piece::Pawn, us, to);
+    removePiece(PiecePawn, us, to);
     addPiece(move.promotedTo(), us, to);
   }
 
-  if (us == Color::Black) {
+  if (us == ColorBlack) {
     ++mFullMove;
   }
 

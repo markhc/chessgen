@@ -35,20 +35,29 @@
 
 namespace chessgen
 {
-static std::string_view _initialFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+static constexpr std::string_view _initialFen[] = {
+    // Standard,
+    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+    // Chess960,
+    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+    // Antichess,
+    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - - 0 1",
+    // ThreeCheck
+    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 +0+0",
+};
 static std::once_flag   _flag;
 
 // -------------------------------------------------------------------------------------------------
-Board::Board()
+Board::Board(ChessVariant variant)
 {
   std::call_once(_flag, [] { attacks::precomputeTables(); });
-  loadFen(_initialFen);
+  loadFen(_initialFen[int(variant)], variant);
 }
 // -------------------------------------------------------------------------------------------------
-Board::Board(std::string_view initialFen)
+Board::Board(std::string_view initialFen, ChessVariant variant)
 {
   std::call_once(_flag, [] { attacks::precomputeTables(); });
-  loadFen(initialFen);
+  loadFen(initialFen, variant);
 }
 // -------------------------------------------------------------------------------------------------
 Board::Board(BoardState const& state)
@@ -91,21 +100,22 @@ Board& Board::operator=(Board&& rhs) noexcept
   return *this;
 }
 // -------------------------------------------------------------------------------------------------
-void Board::loadFen(std::string_view fen)
+void Board::loadFen(std::string_view fen, ChessVariant variant)
 {
   {
     auto lock = std::unique_lock(mMovesMutex);
     mLegalMoves.clear();
   }
+  mVariant      = variant;
   mReason       = GameOverReason::OnGoing;
   mBoardChanged = true;
   mStates.clear();
-  mStates.push_back(GameState{BoardState::fromFen(fen), std::nullopt});
+  mStates.push_back(GameState{BoardState::fromFen(fen, variant), std::nullopt});
 }
 // -------------------------------------------------------------------------------------------------
 std::string Board::getFen() const
 {
-  return getState().toFen();
+  return getState().getFen();
 }
 // -------------------------------------------------------------------------------------------------
 std::string Board::prettyPrint(bool useUnicodeChars) const
@@ -133,15 +143,15 @@ std::string Board::prettyPrint(bool useUnicodeChars) const
 
   auto printIcon = [&](Square square) {
     auto const pieces = {
-        Piece::Pawn,
-        Piece::Bishop,
-        Piece::Knight,
-        Piece::Rook,
-        Piece::Queen,
-        Piece::King,
+        PiecePawn,
+        PieceBishop,
+        PieceKnight,
+        PieceRook,
+        PieceQueen,
+        PieceKing,
     };
 
-    for (auto&& color : {Color::White, Color::Black}) {
+    for (auto&& color : {ColorWhite, ColorBlack}) {
       for (auto&& piece : pieces) {
         if (getState().getPieces(color, piece) & square) {
           ss << charPieces[int(color)][int(piece)] << ' ';
@@ -190,7 +200,7 @@ std::vector<std::string> Board::getLegalMovesAsSAN() const
 {
   auto result = std::vector<std::string>{};
   for (auto&& move : getLegalMoves()) {
-    result.emplace_back(toSAN(move));
+    result.emplace_back(getSanForMove(move));
   }
   return result;
 }
@@ -283,6 +293,11 @@ bool Board::isValid(UCIMove const& move) const
   return false;
 }
 // -------------------------------------------------------------------------------------------------
+ChessVariant Board::getVariant() const
+{
+  return mVariant;
+}
+// -------------------------------------------------------------------------------------------------
 UCIMove Board::sanToUci(std::string_view move) const
 {
   auto const san = SANMove::parse(move);
@@ -312,9 +327,9 @@ UCIMove Board::sanToUci(std::string_view move) const
   throw std::runtime_error("Invalid move");
 }
 // -------------------------------------------------------------------------------------------------
-std::string Board::toSAN(UCIMove const& move) const
+std::string Board::getSanForMove(UCIMove const& move) const
 {
-  return getState().toSAN(move);
+  return getState().getSanForMove(move);
 }
 // -------------------------------------------------------------------------------------------------
 bool Board::makeMove(CastleSide side)
@@ -403,7 +418,7 @@ int Board::getFullMove() const
 // -------------------------------------------------------------------------------------------------
 bool Board::isInitialPosition() const
 {
-  return getFen() == _initialFen;
+  return getFen() == _initialFen[int(getVariant())];
 }
 // -------------------------------------------------------------------------------------------------
 Color Board::getActivePlayer() const
@@ -446,7 +461,7 @@ bool Board::isInsufficientMaterial() const
   }
 
   // Check King+Knight vs King scenarios
-  if (!(state.getAllPieces(toMove) & ~state.getPieces(toMove, Piece::Knight))) {
+  if (!(state.getAllPieces(toMove) & ~state.getPieces(toMove, PieceKnight))) {
     return true;
   }
 

@@ -4,7 +4,7 @@
 namespace chessgen
 {
 SANMove::SANMove(File fromFile, Rank fromRank, Square toSquare, Piece promotedTo)
-    : mPiece(Piece::Pawn),
+    : mPiece(PiecePawn),
       mFromFile(fromFile),
       mFromRank(fromRank),
       mToSquare(toSquare),
@@ -17,16 +17,16 @@ SANMove::SANMove(Piece piece, File fromFile, Rank fromRank, Square toSquare)
       mFromFile(fromFile),
       mFromRank(fromRank),
       mToSquare(toSquare),
-      mPromoted(Piece::None),
+      mPromoted(PieceNone),
       mCastling(CastleSide::None)
 {
 }
 SANMove::SANMove(CastleSide castling)
-    : mPiece(Piece::None),
+    : mPiece(PieceNone),
       mFromFile(File::None),
       mFromRank(Rank::None),
       mToSquare(Square::None),
-      mPromoted(Piece::None),
+      mPromoted(PieceNone),
       mCastling(castling)
 {
 }
@@ -38,14 +38,14 @@ SANMove SANMove::parse(std::string_view move)
     c = std::tolower(c);
     switch (c) {
       // clang-format off
-      case 'q': return Piece::Queen;
-      case 'r': return Piece::Rook; 
-      case 'n': return Piece::Knight; 
-      case 'b': return Piece::Bishop;
-      case 'k': return Piece::King;
+      case 'q': return PieceQueen;
+      case 'r': return PieceRook; 
+      case 'n': return PieceKnight; 
+      case 'b': return PieceBishop;
+      case 'k': return PieceKing;
       // clang-format on
       default:
-        return Piece::None;
+        return PieceNone;
     }
   };
 
@@ -63,14 +63,14 @@ SANMove SANMove::parse(std::string_view move)
     return {CastleSide::King};
   }
 
-  auto promotedTo = Piece::None;
+  auto promotedTo = PieceNone;
 
   // If the last letter is not a digit, this is a promotion and it indicates
   // the promoted-to piece
   if (!std::isdigit(move.back())) {
     promotedTo = sanGetPieceType(stringPopBack(move));
 
-    if (promotedTo == Piece::None) {
+    if (promotedTo == PieceNone) {
       throw std::runtime_error("Malformed SAN move: " + std::string(move));
     }
     if (move.back() == '=') {
@@ -116,7 +116,7 @@ SANMove SANMove::parse(std::string_view move)
     }
   }
   
-  if (promotedTo != Piece::None) {
+  if (promotedTo != PieceNone) {
     // A promotion must be a pawn move
     // and so it cannot reach this code, it must return early
     throw std::runtime_error("Malformed SAN move: " + std::string(move));

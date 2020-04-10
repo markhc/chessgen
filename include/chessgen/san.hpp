@@ -41,7 +41,7 @@ public:
   File   fromFile() const { return mFromFile; }
   Rank   fromRank() const { return mFromRank; }
 
-  bool isPromotion() const { return mPromoted != Piece::None;  }
+  bool isPromotion() const { return mPromoted != PieceNone;  }
   Piece promotedTo() const { return mPromoted; }
 
   bool       isCastling() const { return mCastling != CastleSide::None; }
