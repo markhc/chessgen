@@ -1,4 +1,4 @@
-# ChessGen 
+# chessgen
 
 A chess move generator and validator written in modern C++
 
