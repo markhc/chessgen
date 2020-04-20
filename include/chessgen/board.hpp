@@ -27,13 +27,14 @@
 #include <optional>
 #include <string>
 #include <type_traits>
+#include <unordered_map>
 #include <vector>
 
 #include "bitboard.hpp"
-#include "config.hpp"
 #include "board_state.hpp"
-#include "ucimove.hpp"
+#include "config.hpp"
 #include "san.hpp"
+#include "ucimove.hpp"
 
 namespace chessgen
 {
@@ -41,6 +42,10 @@ class Board
 {
 public:
   struct GameState {
+    GameState(BoardState state, std::optional<UCIMove> move)
+        : boardState(std::move(state)), movePlayed(std::move(move))
+    {
+    }
     BoardState             boardState;
     std::optional<UCIMove> movePlayed;
   };
@@ -128,11 +133,11 @@ private:
     return std::nullopt;
   }
 
-  std::vector<GameState>       mStates;
-  GameOverReason               mReason{GameOverReason::OnGoing};
-  ChessVariant                 mVariant{ChessVariant::Standard};
-  mutable std::vector<UCIMove> mLegalMoves;
-  mutable std::atomic_bool     mBoardChanged{true};
-  mutable std::mutex           mMovesMutex{};
+  std::vector<GameState>              mStates;
+  GameOverReason                      mReason{GameOverReason::OnGoing};
+  ChessVariant                        mVariant{ChessVariant::Standard};
+  mutable std::vector<UCIMove>        mLegalMoves;
+  mutable std::atomic_bool            mBoardChanged{true};
+  mutable std::mutex                  mMovesMutex{};
 };
 }  // namespace chessgen

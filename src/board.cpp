@@ -372,9 +372,10 @@ bool Board::makeMove(UCIMove const& move)
   mStates.back().movePlayed = move;
 
   auto state = getState();
-  state.makeMove(move);
+  
+  CHESSGEN_ASSERT(state.makeMove(move));
 
-  mStates.push_back(GameState{state, std::nullopt});
+  mStates.emplace_back(std::move(state), std::nullopt);
 
   mBoardChanged = true;
   gameOverCheck();
