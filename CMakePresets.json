@@ -1,0 +1,60 @@
+{
+  "version": 2,
+  "configurePresets": [
+    {
+      "name": "default",
+      "displayName": "Default build preset. Debug.",
+      "description": "Sets Ninja generator, build and install directory",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/${presetName}",
+        "CHESSGEN_TESTS": "ON",
+        "CHESSGEN_ASAN": "ON",
+        "CHESSGEN_UBSAN": "ON"
+      }
+    },
+    {
+      "name": "release",
+      "displayName": "Release preset.",
+      "description": "Sets Ninja generator, build and install directory",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/${presetName}",
+        "CHESSGEN_TESTS": "OFF",
+        "CHESSGEN_ASAN": "OFF",
+        "CHESSGEN_UBSAN": "OFF"
+      }
+    },
+    {
+      "name": "test",
+      "displayName": "Test preset.",
+      "description": "Sets Ninja generator, build and install directory",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}/test",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CHESSGEN_TESTS": "ON",
+        "CHESSGEN_ASAN": "ON",
+        "CHESSGEN_UBSAN": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "default",
+      "configurePreset": "default"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "tests",
+      "description": "",
+      "displayName": "",
+      "configurePreset": "test"
+    }
+  ]
+}

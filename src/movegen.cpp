@@ -377,7 +377,7 @@ auto generateMoves<GenType::Evasions>(class BoardState const& state) -> std::vec
   auto moves         = std::vector<UCIMove>{};
   auto ksq           = state.getKingSquare(us);
   auto sliderAttacks = Bitboard{};
-  auto sliders       = state.getCheckers() &       //
+  auto sliders       = state.getCheckers() &     //
                  ~state.getPieces(PiecePawn) &   //
                  ~state.getPieces(PieceKnight);  //
 

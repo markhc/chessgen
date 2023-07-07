@@ -21,8 +21,8 @@
 
 #include "chessgen/board_state.hpp"
 
-#include <charconv>
 #include <cassert>
+#include <charconv>
 
 #include "chessgen/attacks.hpp"
 #include "chessgen/board.hpp"
@@ -50,15 +50,13 @@ void BoardState::clearEnPassant()
 // -------------------------------------------------------------------------------------------------
 void BoardState::updateNonPieceBitboards()
 {
-  mAllPieces[ColorWhite] =
-      mPieces[ColorWhite][PiecePawn] | mPieces[ColorWhite][PieceRook] |
-      mPieces[ColorWhite][PieceKnight] | mPieces[ColorWhite][PieceBishop] |
-      mPieces[ColorWhite][PieceQueen] | mPieces[ColorWhite][PieceKing];
+  mAllPieces[ColorWhite] = mPieces[ColorWhite][PiecePawn] | mPieces[ColorWhite][PieceRook] |
+                           mPieces[ColorWhite][PieceKnight] | mPieces[ColorWhite][PieceBishop] |
+                           mPieces[ColorWhite][PieceQueen] | mPieces[ColorWhite][PieceKing];
 
-  mAllPieces[ColorBlack] =
-      mPieces[ColorBlack][PiecePawn] | mPieces[ColorBlack][PieceRook] |
-      mPieces[ColorBlack][PieceKnight] | mPieces[ColorBlack][PieceBishop] |
-      mPieces[ColorBlack][PieceQueen] | mPieces[ColorBlack][PieceKing];
+  mAllPieces[ColorBlack] = mPieces[ColorBlack][PiecePawn] | mPieces[ColorBlack][PieceRook] |
+                           mPieces[ColorBlack][PieceKnight] | mPieces[ColorBlack][PieceBishop] |
+                           mPieces[ColorBlack][PieceQueen] | mPieces[ColorBlack][PieceKing];
 
   mOccupied = mAllPieces[ColorWhite] | mAllPieces[ColorBlack];
 }
@@ -95,8 +93,7 @@ std::string BoardState::getFen() const
   }
 
   fen += mTurn == ColorWhite ? " w " : " b ";
-  if (mCastleRights[ColorWhite] == CastleSide::None &&
-      mCastleRights[ColorBlack] == CastleSide::None) {
+  if (mCastleRights[ColorWhite] == CastleSide::None && mCastleRights[ColorBlack] == CastleSide::None) {
     fen += '-';
   } else {
     if (enumHasFlag(mCastleRights[ColorWhite], CastleSide::King)) fen += 'K';
@@ -265,6 +262,8 @@ BoardState BoardState::fromFen(std::string_view view, ChessVariant variant)
     } else {
       throw std::runtime_error{"Malformed FEN string"};
     }
+  } else {
+    throw std::runtime_error{"Unsupported chess variant"};
   }
 
   state.updateNonPieceBitboards();

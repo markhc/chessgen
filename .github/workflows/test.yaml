@@ -1,0 +1,22 @@
+name: Run Tests
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: lukka/get-cmake@latest
+      - name: Configure
+        run: cmake -S . -B build -DCHESSGEN_TESTS=ON -DCHESSGEN_ASAN=ON -DCHESSGEN_UBSAN=ON
+      - name: Build
+        run: cmake --build build
+      - name: Run Tests
+        run: |
+          cd build
+          ctest --output-on-failure
